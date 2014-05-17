@@ -1,0 +1,121 @@
+@font-face {
+        font-family: "LiberationMono";
+        font-style: normal;
+        src: url("../fonts/LiberationMono-Regular.ttf") format("truetype"); /* non-IE */
+}
+@font-face {
+        font-family: "LiberationMono";
+        font-style: normal;
+        font-weight: bold;
+        src: url("../fonts/LiberationMono-Bold.ttf") format("truetype"); /* non-IE */
+}
+
+#bottom {
+padding-top: 40px;
+padding-bottom: 60px;
+background: #eee;
+border-top: 1px solid #ccc;
+height: 200px;
+}
+#header {
+background-color: whitesmoke;
+border-bottom: 1px solid #e5e5e5;
+padding-top: 20px;
+max-width: 100%;
+}
+
+h1{
+	font-size: 40px;
+}
+
+body{
+	font-size:medium;
+	padding:5%; 
+	padding-top:0px;
+}
+.sequence{
+	font-family: "LiberationMono", monospace;
+	font-size:large;
+}
+.psite{
+	color:#5cb85c;
+	font-weight: bold;
+}
+.mut{
+	color:#d9534f;
+	font-weight: bold;
+}
+.logo{
+	/*height:40%;*/
+	width:100%;
+}
+
+table td, table th
+{
+    text-align: center;
+    vertical-align: middle;
+    position: relative;
+}
+
+table td img
+{
+    vertical-align: middle;
+    display: inline-block;
+}
+.dataTables_info{
+	text-align: left;
+}
+.gain{
+	color:#5cb85c;
+	font-weight: bold;
+}
+.loss{
+	color:#d9534f;
+	font-weight: bold;
+}
+
+a:hover{
+	text-decoration: none;
+	cursor: hand;
+}
+
+.badge{
+	font-size: 18px;
+	background-color: #333;
+}
+.label{
+	font-size: 20px;
+}
+
+#gain-label, #loss-label{
+	cursor: hand;
+}
+.alert{
+	text-align: left;
+	margin-bottom: 10px;
+}
+
+.alert-box{
+	margin-top: 30px;
+	margin-bottom: 30px;
+}
+
+#mimp-logo{
+	height:70px; 
+	margin-bottom:15px;
+	margin-top:15px;
+}
+
+select{    
+	font-size: 15px !important;
+	height:35px !important;
+}  
+
+#search-input{
+	font-size: 15px !important;
+	height: 35px !important;
+}
+
+label{
+	font-weight: normal !important;
+}

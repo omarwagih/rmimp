@@ -1,0 +1,145 @@
+
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+			
+		<title>MIMP - Results</title>
+			
+		<link rel="stylesheet" type="text/css" href="./css/bootstrap.min.css">
+		<link rel="stylesheet" type="text/css" href="./css/bootstrap.flatly.min.css">
+		
+		<link rel="stylesheet" type="text/css" href="./css/DT_bootstrap.css">
+		
+		<link rel="stylesheet" type="text/css" href="./css/main.css">
+		
+		<script type="text/javascript" charset="utf-8" language="javascript" src="./js/jquery.js"></script>
+		<script type="text/javascript" charset="utf-8" language="javascript" src="./js/jquery.dataTables.js"></script>
+		<script type="text/javascript" charset="utf-8" language="javascript" src="./js/DT_bootstrap.js"></script>
+		<script type="text/javascript" charset="utf-8" language="javascript" src="./js/jquery.zoom.min.js"></script>
+		<script>
+			
+		
+			var updateZoom = function(){
+				/*console.log('Zoom updated!');
+				$('img.logo')
+				.wrap('<span style="display:inline-block;"></span>')
+				.css('display', 'block')
+				.parent()
+				.zoom({
+				    onZoomIn: function(){
+					    $(this).siblings().css('visibility', 'hidden');
+				    },
+				    onZoomOut: function(){
+					    $(this).siblings().css('visibility', 'visible');
+				    }
+				    
+				});*/
+			}
+			
+			$(document).ready(function(){
+				updateZoom();
+				
+				$('#loss-badge').text($('#n_loss').text());
+				$('#gain-badge').text($('#n_gain').text());
+				$('#mut-badge').text($('#n_mut').text());
+				
+				// Show only gain or only loss on click of label
+				$('#gain-label').click(function(){
+					$('#search-input').val('Gain').trigger('keyup.DT');
+					$('#search-input').focus();
+				});
+				$('#loss-label').click(function(){
+					$('#search-input').val('Loss').trigger('keyup.DT');
+					$('#search-input').focus();
+				});
+				
+				// Update zoom on pagination change
+				$('.pagination').click(updateZoom);
+				$('select').change(updateZoom);
+				$('#search-input').on('input', updateZoom);
+				
+				$('.tip-close').click(function(){
+					el = $(this).parents('.alert');
+					id = el.attr('id');
+					console.log(id);
+					//$.cookie(id, "clicked", { expires: 90 });
+					el.hide();
+				});
+				
+				
+				fnShowHide(3);
+				// Dont show percentile ranks
+				fnShowHide(7);
+				fnShowHide(8);
+
+			});
+			
+			function fnShowHide( iCol ){
+				/* Get the DataTables object again - this is not a recreation, just a get of the object */
+				var oTable = $('#example').dataTable();
+	
+				var bVis = oTable.fnSettings().aoColumns[iCol].bVisible;
+				oTable.fnSetColumnVis( iCol, bVis ? false : true );
+			}
+		</script>
+		<style>
+		table {
+   width: 200px; /*specify a width*/
+   table-layout:fixed;
+}
+.alert-box{
+display:none;
+}
+
+div.row{
+	margin-bottom:15px;
+}
+
+		</style>
+	</head>
+	<body>
+	<div>
+	<center><img id="mimp-logo" src="./images/mimp_logo.png" alt="MIMP logo"/><center>
+	
+	<span id="loss-label" class="label label-danger">Loss <span class="badge" id="loss-badge">NA</span></span>
+	<span id="gain-label" class="label label-success">Gain <span class="badge" id="gain-badge">NA</span></span>
+	<span class="label label-default">Mutations <span class="badge" id="mut-badge">NA</span></span>
+	</div>
+	<hr>
+	
+	<div class="alert-box">
+	    <div id="tip1" class="alert alert-info">
+	    	<button type="button" class="tip-close close" data-dismiss="alert" aria-hidden="true">&times;</button>
+	    	<p><strong>Saving this page</strong> To save a static version of this page for later viewing, simply click <code>File</code> and <code>Save As</code>. 
+	    	All logos and data will be saved to an external web page file. Ensure that you select <code>Web Page, Complete</code> from the dropdown when saving</p>
+	    </div>
+	    <div id="tip2" class="alert alert-info">
+	    	<button type="button" class="tip-close close" data-dismiss="alert" aria-hidden="true">&times;</button>
+	    	<p><strong>Logo zoom</strong> to view a close-up of a particular sequence logo, try hovering over it!
+	    </div>
+    </div>
+    
+	<table class="table table-striped table-bordered" id="example" width="">
+    <thead>
+        <tr>
+            <th width="8%">Gene</th>
+            <th width="8%">P-site</th>
+            <th width="8%">Mut.</th>
+            <th width="7%">Dist.</th>
+            <th width="15%">P-site Seq.</th>
+            <th width="10%">WT score</th>
+            <th width="10%">MT score</th>
+            <th width="10%">WT perc.</th>
+            <th width="10%">MT perc.</th>
+            <th width="10%">Log ratio</th>
+            <th width="7%">Effect</th>
+            <th width="28%">PWM</th>
+        </tr>
+    </thead>
+    <tbody id="table-body">
+    
+<DATA>
+
+    </tbody>
+</table>
+</body></html>

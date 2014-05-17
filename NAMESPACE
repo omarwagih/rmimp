@@ -1,0 +1,7 @@
+export(PWM)
+export(dohtml)
+export(extractDigits)
+export(mimp)
+export(replaceChar)
+export(results2html)
+export(unfactor)

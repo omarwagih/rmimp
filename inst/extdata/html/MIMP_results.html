@@ -1,0 +1,381 @@
+
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+			
+		<title>MIMP - Results</title>
+			
+		<link rel="stylesheet" type="text/css" href="./css/bootstrap.min.css">
+		<link rel="stylesheet" type="text/css" href="./css/bootstrap.flatly.min.css">
+		
+		<link rel="stylesheet" type="text/css" href="./css/DT_bootstrap.css">
+		
+		<link rel="stylesheet" type="text/css" href="./css/main.css">
+		
+		<script type="text/javascript" charset="utf-8" language="javascript" src="./js/jquery.js"></script>
+		<script type="text/javascript" charset="utf-8" language="javascript" src="./js/jquery.dataTables.js"></script>
+		<script type="text/javascript" charset="utf-8" language="javascript" src="./js/DT_bootstrap.js"></script>
+		<script type="text/javascript" charset="utf-8" language="javascript" src="./js/jquery.zoom.min.js"></script>
+		<script>
+			
+		
+			var updateZoom = function(){
+				/*console.log('Zoom updated!');
+				$('img.logo')
+				.wrap('<span style="display:inline-block;"></span>')
+				.css('display', 'block')
+				.parent()
+				.zoom({
+				    onZoomIn: function(){
+					    $(this).siblings().css('visibility', 'hidden');
+				    },
+				    onZoomOut: function(){
+					    $(this).siblings().css('visibility', 'visible');
+				    }
+				    
+				});*/
+			}
+			
+			$(document).ready(function(){
+				updateZoom();
+				
+				$('#loss-badge').text($('#n_loss').text());
+				$('#gain-badge').text($('#n_gain').text());
+				$('#mut-badge').text($('#n_mut').text());
+				
+				// Show only gain or only loss on click of label
+				$('#gain-label').click(function(){
+					$('#search-input').val('Gain').trigger('keyup.DT');
+					$('#search-input').focus();
+				});
+				$('#loss-label').click(function(){
+					$('#search-input').val('Loss').trigger('keyup.DT');
+					$('#search-input').focus();
+				});
+				
+				// Update zoom on pagination change
+				$('.pagination').click(updateZoom);
+				$('select').change(updateZoom);
+				$('#search-input').on('input', updateZoom);
+				
+				$('.tip-close').click(function(){
+					el = $(this).parents('.alert');
+					id = el.attr('id');
+					console.log(id);
+					//$.cookie(id, "clicked", { expires: 90 });
+					el.hide();
+				});
+				
+				
+				fnShowHide(3);
+				// Dont show percentile ranks
+				fnShowHide(7);
+				fnShowHide(8);
+
+			});
+			
+			function fnShowHide( iCol ){
+				/* Get the DataTables object again - this is not a recreation, just a get of the object */
+				var oTable = $('#example').dataTable();
+	
+				var bVis = oTable.fnSettings().aoColumns[iCol].bVisible;
+				oTable.fnSetColumnVis( iCol, bVis ? false : true );
+			}
+		</script>
+		<style>
+		table {
+   width: 200px; /*specify a width*/
+   table-layout:fixed;
+}
+.alert-box{
+display:none;
+}
+
+div.row{
+	margin-bottom:15px;
+}
+
+		</style>
+	</head>
+	<body>
+	<div>
+	<center><img id="mimp-logo" src="./images/mimp_logo.png" alt="MIMP logo"/><center>
+	
+	<span id="loss-label" class="label label-danger">Loss <span class="badge" id="loss-badge">NA</span></span>
+	<span id="gain-label" class="label label-success">Gain <span class="badge" id="gain-badge">NA</span></span>
+	<span class="label label-default">Mutations <span class="badge" id="mut-badge">NA</span></span>
+	</div>
+	<hr>
+	
+	<div class="alert-box">
+	    <div id="tip1" class="alert alert-info">
+	    	<button type="button" class="tip-close close" data-dismiss="alert" aria-hidden="true">&times;</button>
+	    	<p><strong>Saving this page</strong> To save a static version of this page for later viewing, simply click <code>File</code> and <code>Save As</code>. 
+	    	All logos and data will be saved to an external web page file. Ensure that you select <code>Web Page, Complete</code> from the dropdown when saving</p>
+	    </div>
+	    <div id="tip2" class="alert alert-info">
+	    	<button type="button" class="tip-close close" data-dismiss="alert" aria-hidden="true">&times;</button>
+	    	<p><strong>Logo zoom</strong> to view a close-up of a particular sequence logo, try hovering over it!
+	    </div>
+    </div>
+    
+	<table class="table table-striped table-bordered" id="example" width="">
+    <thead>
+        <tr>
+            <th width="8%">Gene</th>
+            <th width="8%">P-site</th>
+            <th width="8%">Mut.</th>
+            <th width="7%">Dist.</th>
+            <th width="15%">P-site Seq.</th>
+            <th width="10%">WT score</th>
+            <th width="10%">MT score</th>
+            <th width="10%">WT perc.</th>
+            <th width="10%">MT perc.</th>
+            <th width="10%">Log ratio</th>
+            <th width="7%">Effect</th>
+            <th width="28%">PWM</th>
+        </tr>
+    </thead>
+    <tbody id="table-body">
+    
+<tr> <td class="gene-name">CTNNB1</td>
+            <td class="psite-pos">42</td>
+            <td class="mut-abbr">S37F</td>
+            <td class="mut-dist">-5</td>
+            <td class="sequence">IH<a class="mut">S</a>GATT<a class="psite">T</a>APSLSGK<br>IH<a class="mut">F</a>GATT<a class="psite">T</a>APSLSGK</td>
+            <td class="wt-score">0.518</td>
+            <td class="mt-score">0.351</td>
+            <td class="wt-perc">0.182</td>
+            <td class="mt-perc">0.888</td>
+            <td class="log-ratio">-0.559</td>
+            <td class="effect"><a class="loss">Loss</a></td>
+            <td class="seq-logo"><a class="hide name">ADCK5</a><img src="/Users/omarwagih/Development/Rmimp/inst/extdata/html/images/logos/ADCK5.png" class="logo" alt=ADCK5/></td>
+            </tr>
+<tr> <td class="gene-name">TP53</td>
+            <td class="psite-pos">253</td>
+            <td class="mut-abbr">R248P</td>
+            <td class="mut-dist">-5</td>
+            <td class="sequence">MN<a class="mut">R</a>RPIL<a class="psite">T</a>IITLEDS<br>MN<a class="mut">P</a>RPIL<a class="psite">T</a>IITLEDS</td>
+            <td class="wt-score">0.232</td>
+            <td class="mt-score">0.455</td>
+            <td class="wt-perc">0.524</td>
+            <td class="mt-perc">0.154</td>
+            <td class="log-ratio">0.973</td>
+            <td class="effect"><a class="gain">Gain</a></td>
+            <td class="seq-logo"><a class="hide name">ADRBK2</a><img src="/Users/omarwagih/Development/Rmimp/inst/extdata/html/images/logos/ADRBK2.png" class="logo" alt=ADRBK2/></td>
+            </tr>
+<tr> <td class="gene-name">TP53</td>
+            <td class="psite-pos">284</td>
+            <td class="mut-abbr">R282W</td>
+            <td class="mut-dist">-2</td>
+            <td class="sequence">CPGRD<a class="mut">R</a>R<a class="psite">T</a>EEENLRK<br>CPGRD<a class="mut">W</a>R<a class="psite">T</a>EEENLRK</td>
+            <td class="wt-score">0.48</td>
+            <td class="mt-score">0.301</td>
+            <td class="wt-perc">0.234</td>
+            <td class="mt-perc">0.57</td>
+            <td class="log-ratio">-0.674</td>
+            <td class="effect"><a class="loss">Loss</a></td>
+            <td class="seq-logo"><a class="hide name">AURKA</a><img src="/Users/omarwagih/Development/Rmimp/inst/extdata/html/images/logos/AURKA.png" class="logo" alt=AURKA/></td>
+            </tr>
+<tr> <td class="gene-name">TP53</td>
+            <td class="psite-pos">284</td>
+            <td class="mut-abbr">R282W</td>
+            <td class="mut-dist">-2</td>
+            <td class="sequence">CPGRD<a class="mut">R</a>R<a class="psite">T</a>EEENLRK<br>CPGRD<a class="mut">W</a>R<a class="psite">T</a>EEENLRK</td>
+            <td class="wt-score">0.589</td>
+            <td class="mt-score">0.29</td>
+            <td class="wt-perc">0.382</td>
+            <td class="mt-perc">0.696</td>
+            <td class="log-ratio">-1.02</td>
+            <td class="effect"><a class="loss">Loss</a></td>
+            <td class="seq-logo"><a class="hide name">AURKB</a><img src="/Users/omarwagih/Development/Rmimp/inst/extdata/html/images/logos/AURKB.png" class="logo" alt=AURKB/></td>
+            </tr>
+<tr> <td class="gene-name">TP53</td>
+            <td class="psite-pos">284</td>
+            <td class="mut-abbr">R282W</td>
+            <td class="mut-dist">-2</td>
+            <td class="sequence">CPGRD<a class="mut">R</a>R<a class="psite">T</a>EEENLRK<br>CPGRD<a class="mut">W</a>R<a class="psite">T</a>EEENLRK</td>
+            <td class="wt-score">0.472</td>
+            <td class="mt-score">0.253</td>
+            <td class="wt-perc">0.308</td>
+            <td class="mt-perc">0.528</td>
+            <td class="log-ratio">-0.903</td>
+            <td class="effect"><a class="loss">Loss</a></td>
+            <td class="seq-logo"><a class="hide name">AURKC</a><img src="/Users/omarwagih/Development/Rmimp/inst/extdata/html/images/logos/AURKC.png" class="logo" alt=AURKC/></td>
+            </tr>
+<tr> <td class="gene-name">TP53</td>
+            <td class="psite-pos">149</td>
+            <td class="mut-abbr">W146S</td>
+            <td class="mut-dist">-3</td>
+            <td class="sequence">PVQL<a class="mut">W</a>VD<a class="psite">S</a>TPPPGTR<br>PVQL<a class="mut">S</a>VD<a class="psite">S</a>TPPPGTR</td>
+            <td class="wt-score">0.227</td>
+            <td class="mt-score">0.435</td>
+            <td class="wt-perc">0.488</td>
+            <td class="mt-perc">0.127</td>
+            <td class="log-ratio">0.938</td>
+            <td class="effect"><a class="gain">Gain</a></td>
+            <td class="seq-logo"><a class="hide name">CSNK1D</a><img src="/Users/omarwagih/Development/Rmimp/inst/extdata/html/images/logos/CSNK1D.png" class="logo" alt=CSNK1D/></td>
+            </tr>
+<tr> <td class="gene-name">CTNNB1</td>
+            <td class="psite-pos">40</td>
+            <td class="mut-abbr">S37F</td>
+            <td class="mut-dist">-3</td>
+            <td class="sequence">SGIH<a class="mut">S</a>GA<a class="psite">T</a>TTAPSLS<br>SGIH<a class="mut">F</a>GA<a class="psite">T</a>TTAPSLS</td>
+            <td class="wt-score">0.505</td>
+            <td class="mt-score">0.3</td>
+            <td class="wt-perc">0.367</td>
+            <td class="mt-perc">0.76</td>
+            <td class="log-ratio">-0.75</td>
+            <td class="effect"><a class="loss">Loss</a></td>
+            <td class="seq-logo"><a class="hide name">CSNK1D</a><img src="/Users/omarwagih/Development/Rmimp/inst/extdata/html/images/logos/CSNK1D.png" class="logo" alt=CSNK1D/></td>
+            </tr>
+<tr> <td class="gene-name">CTNNB1</td>
+            <td class="psite-pos">40</td>
+            <td class="mut-abbr">S33C</td>
+            <td class="mut-dist">-7</td>
+            <td class="sequence"><a class="mut">S</a>GIHSGA<a class="psite">T</a>TTAPSLS<br><a class="mut">C</a>GIHSGA<a class="psite">T</a>TTAPSLS</td>
+            <td class="wt-score">0.516</td>
+            <td class="mt-score">0.303</td>
+            <td class="wt-perc">0.278</td>
+            <td class="mt-perc">0.726</td>
+            <td class="log-ratio">-0.769</td>
+            <td class="effect"><a class="loss">Loss</a></td>
+            <td class="seq-logo"><a class="hide name">CSNK1G1</a><img src="/Users/omarwagih/Development/Rmimp/inst/extdata/html/images/logos/CSNK1G1.png" class="logo" alt=CSNK1G1/></td>
+            </tr>
+<tr> <td class="gene-name">TP53</td>
+            <td class="psite-pos">253</td>
+            <td class="mut-abbr">R248P</td>
+            <td class="mut-dist">-5</td>
+            <td class="sequence">MN<a class="mut">R</a>RPIL<a class="psite">T</a>IITLEDS<br>MN<a class="mut">P</a>RPIL<a class="psite">T</a>IITLEDS</td>
+            <td class="wt-score">0.652</td>
+            <td class="mt-score">0.293</td>
+            <td class="wt-perc">0.215</td>
+            <td class="mt-perc">0.746</td>
+            <td class="log-ratio">-1.15</td>
+            <td class="effect"><a class="loss">Loss</a></td>
+            <td class="seq-logo"><a class="hide name">DYRK1B</a><img src="/Users/omarwagih/Development/Rmimp/inst/extdata/html/images/logos/DYRK1B.png" class="logo" alt=DYRK1B/></td>
+            </tr>
+<tr> <td class="gene-name">CTNNB1</td>
+            <td class="psite-pos">40</td>
+            <td class="mut-abbr">S33C</td>
+            <td class="mut-dist">-7</td>
+            <td class="sequence"><a class="mut">S</a>GIHSGA<a class="psite">T</a>TTAPSLS<br><a class="mut">C</a>GIHSGA<a class="psite">T</a>TTAPSLS</td>
+            <td class="wt-score">0.575</td>
+            <td class="mt-score">0.325</td>
+            <td class="wt-perc">0.208</td>
+            <td class="mt-perc">0.742</td>
+            <td class="log-ratio">-0.821</td>
+            <td class="effect"><a class="loss">Loss</a></td>
+            <td class="seq-logo"><a class="hide name">FASTK</a><img src="/Users/omarwagih/Development/Rmimp/inst/extdata/html/images/logos/FASTK.png" class="logo" alt=FASTK/></td>
+            </tr>
+<tr> <td class="gene-name">TP53</td>
+            <td class="psite-pos">284</td>
+            <td class="mut-abbr">R282W</td>
+            <td class="mut-dist">-2</td>
+            <td class="sequence">CPGRD<a class="mut">R</a>R<a class="psite">T</a>EEENLRK<br>CPGRD<a class="mut">W</a>R<a class="psite">T</a>EEENLRK</td>
+            <td class="wt-score">0.548</td>
+            <td class="mt-score">0.29</td>
+            <td class="wt-perc">0.523</td>
+            <td class="mt-perc">0.692</td>
+            <td class="log-ratio">-0.917</td>
+            <td class="effect"><a class="loss">Loss</a></td>
+            <td class="seq-logo"><a class="hide name">PAK1</a><img src="/Users/omarwagih/Development/Rmimp/inst/extdata/html/images/logos/PAK1.png" class="logo" alt=PAK1/></td>
+            </tr>
+<tr> <td class="gene-name">TP53</td>
+            <td class="psite-pos">253</td>
+            <td class="mut-abbr">R248P</td>
+            <td class="mut-dist">-5</td>
+            <td class="sequence">MN<a class="mut">R</a>RPIL<a class="psite">T</a>IITLEDS<br>MN<a class="mut">P</a>RPIL<a class="psite">T</a>IITLEDS</td>
+            <td class="wt-score">0.195</td>
+            <td class="mt-score">0.475</td>
+            <td class="wt-perc">0.322</td>
+            <td class="mt-perc">0.152</td>
+            <td class="log-ratio">1.29</td>
+            <td class="effect"><a class="gain">Gain</a></td>
+            <td class="seq-logo"><a class="hide name">PIM3</a><img src="/Users/omarwagih/Development/Rmimp/inst/extdata/html/images/logos/PIM3.png" class="logo" alt=PIM3/></td>
+            </tr>
+<tr> <td class="gene-name">TP53</td>
+            <td class="psite-pos">284</td>
+            <td class="mut-abbr">R282W</td>
+            <td class="mut-dist">-2</td>
+            <td class="sequence">CPGRD<a class="mut">R</a>R<a class="psite">T</a>EEENLRK<br>CPGRD<a class="mut">W</a>R<a class="psite">T</a>EEENLRK</td>
+            <td class="wt-score">0.529</td>
+            <td class="mt-score">0.265</td>
+            <td class="wt-perc">0.164</td>
+            <td class="mt-perc">0.626</td>
+            <td class="log-ratio">-0.998</td>
+            <td class="effect"><a class="loss">Loss</a></td>
+            <td class="seq-logo"><a class="hide name">PKA_GROUP</a><img src="/Users/omarwagih/Development/Rmimp/inst/extdata/html/images/logos/PKA_GROUP.png" class="logo" alt=PKA_GROUP/></td>
+            </tr>
+<tr> <td class="gene-name">TP53</td>
+            <td class="psite-pos">284</td>
+            <td class="mut-abbr">R282W</td>
+            <td class="mut-dist">-2</td>
+            <td class="sequence">CPGRD<a class="mut">R</a>R<a class="psite">T</a>EEENLRK<br>CPGRD<a class="mut">W</a>R<a class="psite">T</a>EEENLRK</td>
+            <td class="wt-score">0.443</td>
+            <td class="mt-score">0.28</td>
+            <td class="wt-perc">0.14</td>
+            <td class="mt-perc">0.5</td>
+            <td class="log-ratio">-0.66</td>
+            <td class="effect"><a class="loss">Loss</a></td>
+            <td class="seq-logo"><a class="hide name">PRKCA</a><img src="/Users/omarwagih/Development/Rmimp/inst/extdata/html/images/logos/PRKCA.png" class="logo" alt=PRKCA/></td>
+            </tr>
+<tr> <td class="gene-name">TP53</td>
+            <td class="psite-pos">284</td>
+            <td class="mut-abbr">R282W</td>
+            <td class="mut-dist">-2</td>
+            <td class="sequence">CPGRD<a class="mut">R</a>R<a class="psite">T</a>EEENLRK<br>CPGRD<a class="mut">W</a>R<a class="psite">T</a>EEENLRK</td>
+            <td class="wt-score">0.529</td>
+            <td class="mt-score">0.289</td>
+            <td class="wt-perc">0.496</td>
+            <td class="mt-perc">0.626</td>
+            <td class="log-ratio">-0.875</td>
+            <td class="effect"><a class="loss">Loss</a></td>
+            <td class="seq-logo"><a class="hide name">PRKCD</a><img src="/Users/omarwagih/Development/Rmimp/inst/extdata/html/images/logos/PRKCD.png" class="logo" alt=PRKCD/></td>
+            </tr>
+<tr> <td class="gene-name">TP53</td>
+            <td class="psite-pos">284</td>
+            <td class="mut-abbr">R282W</td>
+            <td class="mut-dist">-2</td>
+            <td class="sequence">CPGRD<a class="mut">R</a>R<a class="psite">T</a>EEENLRK<br>CPGRD<a class="mut">W</a>R<a class="psite">T</a>EEENLRK</td>
+            <td class="wt-score">0.586</td>
+            <td class="mt-score">0.321</td>
+            <td class="wt-perc">0.397</td>
+            <td class="mt-perc">0.776</td>
+            <td class="log-ratio">-0.869</td>
+            <td class="effect"><a class="loss">Loss</a></td>
+            <td class="seq-logo"><a class="hide name">RPS6KA5</a><img src="/Users/omarwagih/Development/Rmimp/inst/extdata/html/images/logos/RPS6KA5.png" class="logo" alt=RPS6KA5/></td>
+            </tr>
+<tr> <td class="gene-name">TP53</td>
+            <td class="psite-pos">253</td>
+            <td class="mut-abbr">R248P</td>
+            <td class="mut-dist">-5</td>
+            <td class="sequence">MN<a class="mut">R</a>RPIL<a class="psite">T</a>IITLEDS<br>MN<a class="mut">P</a>RPIL<a class="psite">T</a>IITLEDS</td>
+            <td class="wt-score">0.247</td>
+            <td class="mt-score">0.544</td>
+            <td class="wt-perc">0.54</td>
+            <td class="mt-perc">0.16</td>
+            <td class="log-ratio">1.14</td>
+            <td class="effect"><a class="gain">Gain</a></td>
+            <td class="seq-logo"><a class="hide name">STK36</a><img src="/Users/omarwagih/Development/Rmimp/inst/extdata/html/images/logos/STK36.png" class="logo" alt=STK36/></td>
+            </tr>
+<tr> <td class="gene-name">CTNNB1</td>
+            <td class="psite-pos">30</td>
+            <td class="mut-abbr">S33C</td>
+            <td class="mut-dist">3</td>
+            <td class="sequence">SHWQQQS<a class="psite">Y</a>LD<a class="mut">S</a>GIHS<br>SHWQQQS<a class="psite">Y</a>LD<a class="mut">C</a>GIHS</td>
+            <td class="wt-score">0.408</td>
+            <td class="mt-score">0.272</td>
+            <td class="wt-perc">0.188</td>
+            <td class="mt-perc">0.602</td>
+            <td class="log-ratio">-0.583</td>
+            <td class="effect"><a class="loss">Loss</a></td>
+            <td class="seq-logo"><a class="hide name">TTBK1</a><img src="/Users/omarwagih/Development/Rmimp/inst/extdata/html/images/logos/TTBK1.png" class="logo" alt=TTBK1/></td>
+            </tr>
+<div id="n_mut" style="display:none">5</div>
+<div id="n_gain" style="display:none">14</div>
+<div id="n_loss" style="display:none">4</div>
+
+    </tbody>
+</table>
+</body></html>
