@@ -2,7 +2,8 @@
 \alias{saveTransfac}
 \title{Save a PWM matrix object to transfac format}
 \usage{
-saveTransfac(pwm, file.out = tempfile("transfac"), type = "aa")
+saveTransfac(pwm, file.out = tempfile("transfac"), ac = "FOO",
+  type = "aa")
 }
 \arguments{
   \item{pwm}{PWM matrix object}

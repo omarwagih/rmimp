@@ -72,15 +72,9 @@
 				fnShowHide(7);
 				fnShowHide(8);
 
+
 			});
 			
-			function fnShowHide( iCol ){
-				/* Get the DataTables object again - this is not a recreation, just a get of the object */
-				var oTable = $('#example').dataTable();
-	
-				var bVis = oTable.fnSettings().aoColumns[iCol].bVisible;
-				oTable.fnSetColumnVis( iCol, bVis ? false : true );
-			}
 		</script>
 		<style>
 		table {

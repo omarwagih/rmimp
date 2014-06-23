@@ -1,5 +1,5 @@
 BASE_DIR = system.file("extdata", "", package = "MIMP")
-#BASE_DIR = '~/Development/Rmimp/inst/extdata/'
+#BASE_DIR = '~/Development/mimp/inst/extdata/'
 
 AA = c('A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V')
 DNA = c('A', 'T', 'G', 'C')
@@ -24,10 +24,9 @@ DNA_PRIORS_YEAST =   c(A=0.310, C=0.191, G=0.191, T=0.309)
 #' @param type 'aa', 'dna' or 'rna' depending on the namespace
 #' @keywords transfac
 #' 
-saveTransfac <- function(pwm, file.out=tempfile('transfac'), type='aa'){
+saveTransfac <- function(pwm, file.out=tempfile('transfac'), ac='FOO', type='aa'){
   
   id = attr(pwm, 'id') 
-  if(is.null(ac)) id = 'FOO'
   
   NAMESPACE = AA
   if(type=='dna') NAMESPACE = DNA
@@ -107,7 +106,7 @@ unfactor <- function(df){
 #' @export
 #' @examples
 #' # No examples
-PWM <- function(seqs, pseudocount=0.001, relative.freq=T, type='AA', priors=AA_PRIORS_HUMAN){
+PWM <- function(seqs, pseudocount=0.001, relative.freq=T, type='AA', priors=AA_PRIORS_HUMAN, log.bg=F){
   
   # Ensure same length characters 
   seq.len = sapply(seqs, nchar)
@@ -158,6 +157,9 @@ PWM <- function(seqs, pseudocount=0.001, relative.freq=T, type='AA', priors=AA_P
   en = (1/log(2)) * ( (20 - 1)/ (2*length(seqs)) )
   shan = log2(20) - Hi #+ en
   attr(pwm.matrix, 'shannon') = shan
+  
+  
+  if(log.bg) pwm.matrix = apply(pwm.matrix, 2, function(col) log(col / bg.prob))
   
   # Assign AA names to rows/pos col
   rownames(pwm.matrix) = namespace
@@ -422,22 +424,30 @@ pSNVs <- function(muts, psites, seqs, flank=7, multicore=F){
 #' @param thresh.bg Anything below this threshold is considered a negative hit
 #' @param thresh.fg Anything above this threshold is considered a positive hit
 #' @param thresh.log2 Threshold for the absolute value of log ratio. Anything less than this value is discarded.
+#' @param include.cent If TRUE, gains and losses caused by mutation in the central STY residue are kept
 #' 
 #' @keywords mut psites score snp
-scoreWtMt <- function(pwm, mut_ps, is.kinase.pwm=T, thresh.bg=1, thresh.fg=0, thresh.log2=0){
+scoreWtMt <- function(pwm, mut_ps, is.kinase.pwm=T, thresh.bg=1, thresh.fg=0, thresh.log2=0, include.cent=F){
   
   mut_ps$score_wt = mss(mut_ps$wt, pwm, is.kinase.pwm)
   mut_ps$score_mt = mss(mut_ps$mt, pwm, is.kinase.pwm)
-  mut_ps$log_ratio = log2(mut_ps$score_mt/mut_ps$score_wt)
+  mut_ps$log_ratio <- log2(mut_ps$score_mt/mut_ps$score_wt) 
+  
   mut_ps$pwm = ''
   
-  mut_ps = mut_ps[!is.na(mut_ps$score_wt) & !is.na(mut_ps$score_mt),]
+  
+  if(include.cent){
+    mut_ps$score_wt[is.na(mut_ps$score_wt)] = -1
+    mut_ps$score_mt[is.na(mut_ps$score_mt)] = -1
+  }else{
+    mut_ps = mut_ps[!is.na(mut_ps$score_wt) & !is.na(mut_ps$score_mt),]
+  }
   
   a = mut_ps$score_wt > thresh.fg & mut_ps$score_mt < thresh.bg
   b = mut_ps$score_mt > thresh.fg & mut_ps$score_wt < thresh.bg
-    
+  
   mut_ps = mut_ps[a|b,]
-  mut_ps = mut_ps[abs(mut_ps$log_ratio) >= thresh.log2, ]
+  mut_ps = mut_ps[is.na(mut_ps$log_ratio) | abs(mut_ps$log_ratio) >= thresh.log2, ]
   
   return(mut_ps)
 }
@@ -447,7 +457,7 @@ scoreWtMt <- function(pwm, mut_ps, is.kinase.pwm=T, thresh.bg=1, thresh.fg=0, th
 #' This function takes in mutation, sequence and phosphorylation data to predict the 
 #' impact the mutation has on phosphorylation.
 #' 
-#' @param muts Mutation data file: a space delimited text file or data frame containing two columns (1) gene and (1) mutation. 
+#' @param muts Mutation data file: a space delimited text file OR data frame containing two columns (1) gene and (1) mutation. 
 #' Example:
 #' \tabular{ll}{
 #'    TP53 \tab R282W\cr
@@ -457,17 +467,18 @@ scoreWtMt <- function(pwm, mut_ps, is.kinase.pwm=T, thresh.bg=1, thresh.fg=0, th
 #' @param seqs Sequence data file containing protein sequences in FASTA format OR 
 #'  named list of sequences where each list element is the uppercase sequence and the 
 #'  name of each element is that of the protein. Example: list(TP53="ABCXYZ", CDK2="HJKEWR")
-#' @param psites Phosphorylation data file (optional): a space delimited text file containing positions of phosphorylation sites. Example:
+#' @param psites Phosphorylation data file (optional): a space delimited text file OR data frame containing  two columns (1) gene and (1) positions of phosphorylation sites. Example:
 #' \tabular{ll}{
 #'    TP53 \tab 280\cr
 #'    CTNNB1 \tab 29\cr
 #'    CTNNB1 \tab 44\cr
 #' }
-#' @param perc.bg Percentile value between 0 - 100. This value is used to compute a threshold, β from the negative (background) distribution of scores. 
+#' @param perc.bg Percentile value between 0 - 100. This value is used to compute a threshold, beta from the negative (background) distribution of scores. 
 #'  By default this is the 90th percentile of the background distribution of scores. Anything below the threshold is considered a negative hit.
-#' @param perc.fg Percentile value between 0 - 100. This value is used to compute a threshold, α from the positive (foreground) distribution of scores. 
+#' @param perc.fg Percentile value between 0 - 100. This value is used to compute a threshold, alpha from the positive (foreground) distribution of scores. 
 #'  By default this is the 10th percentile of the foreground distribution of scores. Anything above the threshold is considered a positive hit.
 #' @param thresh.log2 Threshold for the absolute value of log ratio. Anything less than this value is discarded (default: 0).
+#' @param include.cent If TRUE, gains and losses caused by mutation in the central STY residue are kept. Scores of peptides with a non-STY central residue is given a score of -1 (default: FALSE).
 #' 
 #' @return 
 #' The data is returned in a \code{data.frame} with the following columns:
@@ -503,7 +514,7 @@ scoreWtMt <- function(pwm, mut_ps, is.kinase.pwm=T, thresh.bg=1, thresh.fg=0, th
 #' 
 #' # Show head of results
 #' head(results)
-mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, display.results=T){
+mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, display.results=T, include.cent=F){
   flank=7
   MUT_REGEX = '^[A-Z]\\d+[A-Z]$'
   DIG_REGEX = '^\\d+$'
@@ -617,7 +628,7 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
     name = names(pwms)[i]
     thresh.bg = cutoffs[[name]]$bg[perc.bg+1]
     thresh.fg = cutoffs[[name]]$fg[perc.fg+1]
-    ss = scoreWtMt(pwm, mut_psites, T, thresh.bg, thresh.fg, thresh.log2)
+    ss = scoreWtMt(pwm, mut_psites, T, thresh.bg, thresh.fg, thresh.log2, include.cent)
     if(nrow(ss)>0) ss$pwm = name
     ss
   })
@@ -659,6 +670,7 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
   s$perc_wt = r$perc_wt
   s$perc_mt = r$perc_mt
   
+  s = s[order(s$log_ratio, decreasing=T),]
   if(display.results) results2html(s)
   
   writeLines('Analysis complete!')
@@ -666,6 +678,7 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
   
   s = s[,!names(s) %in% c('ref_aa', 'alt_aa', 'mut_pos')]
   attr(s, 'cutoffs') = ct
+  
   return(s)
 }
 
@@ -699,6 +712,9 @@ dohtml <- function(x, LOGO_DIR){
   x$log_ratio = signif(x$log_ratio, 3)
   x$perc_wt = signif(x$perc_wt, 3)
   x$perc_mt = signif(x$perc_mt, 3)
+  
+  
+  x$log_ratio[is.na(x$log_ratio)] = '-'
   
   x$pwm = gsub('-', '_', x$pwm)
   

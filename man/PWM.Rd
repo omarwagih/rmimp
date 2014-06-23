@@ -3,7 +3,7 @@
 \title{Construct position weight matrix}
 \usage{
 PWM(seqs, pseudocount = 0.001, relative.freq = T, type = "AA",
-  priors = AA_PRIORS_HUMAN)
+  priors = AA_PRIORS_HUMAN, log.bg = F)
 }
 \arguments{
   \item{seqs}{Aligned sequences all of the same length}

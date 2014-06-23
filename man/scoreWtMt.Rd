@@ -3,7 +3,7 @@
 \title{Score wt and mt sequences for a pwm}
 \usage{
 scoreWtMt(pwm, mut_ps, is.kinase.pwm = T, thresh.bg = 1, thresh.fg = 0,
-  thresh.log2 = 0)
+  thresh.log2 = 0, include.cent = F)
 }
 \arguments{
   \item{pwm}{Position weight matrix of interest}
@@ -21,6 +21,9 @@ scoreWtMt(pwm, mut_ps, is.kinase.pwm = T, thresh.bg = 1, thresh.fg = 0,
 
   \item{thresh.log2}{Threshold for the absolute value of
   log ratio. Anything less than this value is discarded.}
+
+  \item{include.cent}{If TRUE, gains and losses caused by
+  mutation in the central STY residue are kept}
 }
 \description{
 Score wt and mt sequences for a pwm

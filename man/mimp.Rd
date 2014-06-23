@@ -3,11 +3,11 @@
 \title{Predict the impact of single variants on phosphorylation.}
 \usage{
 mimp(muts, seqs, psites, perc.bg = 90, perc.fg = 10, thresh.log2 = 0,
-  display.results = T)
+  display.results = T, include.cent = F)
 }
 \arguments{
   \item{muts}{Mutation data file: a space delimited text
-  file or data frame containing two columns (1) gene and
+  file OR data frame containing two columns (1) gene and
   (1) mutation. Example: \tabular{ll}{ TP53 \tab R282W\cr
   CTNNB1 \tab S33C\cr CTNNB1 \tab S37F\cr }}
 
@@ -18,27 +18,33 @@ mimp(muts, seqs, psites, perc.bg = 90, perc.fg = 10, thresh.log2 = 0,
   list(TP53="ABCXYZ", CDK2="HJKEWR")}
 
   \item{psites}{Phosphorylation data file (optional): a
-  space delimited text file containing positions of
-  phosphorylation sites. Example: \tabular{ll}{ TP53 \tab
-  280\cr CTNNB1 \tab 29\cr CTNNB1 \tab 44\cr }}
+  space delimited text file OR data frame containing two
+  columns (1) gene and (1) positions of phosphorylation
+  sites. Example: \tabular{ll}{ TP53 \tab 280\cr CTNNB1
+  \tab 29\cr CTNNB1 \tab 44\cr }}
 
   \item{perc.bg}{Percentile value between 0 - 100. This
-  value is used to compute a threshold, β from the negative
-  (background) distribution of scores.  By default this is
-  the 90th percentile of the background distribution of
-  scores. Anything below the threshold is considered a
-  negative hit.}
+  value is used to compute a threshold, beta from the
+  negative (background) distribution of scores.  By default
+  this is the 90th percentile of the background
+  distribution of scores. Anything below the threshold is
+  considered a negative hit.}
 
   \item{perc.fg}{Percentile value between 0 - 100. This
-  value is used to compute a threshold, α from the positive
-  (foreground) distribution of scores.  By default this is
-  the 10th percentile of the foreground distribution of
-  scores. Anything above the threshold is considered a
-  positive hit.}
+  value is used to compute a threshold, alpha from the
+  positive (foreground) distribution of scores.  By default
+  this is the 10th percentile of the foreground
+  distribution of scores. Anything above the threshold is
+  considered a positive hit.}
 
   \item{thresh.log2}{Threshold for the absolute value of
   log ratio. Anything less than this value is discarded
   (default: 0).}
+
+  \item{include.cent}{If TRUE, gains and losses caused by
+  mutation in the central STY residue are kept. Scores of
+  peptides with a non-STY central residue is given a score
+  of -1 (default: FALSE).}
 }
 \value{
 The data is returned in a \code{data.frame} with the
