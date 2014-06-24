@@ -692,7 +692,7 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
 #' @keywords helper mimp
 .htmlSeq <- function(s, dist){
   s = strsplit(s,'')[[1]]
-  s[8] = sprintf('<a class="psite">%s</a>', s[8])
+  if(dist != 0) s[8] = sprintf('<a class="psite">%s</a>', s[8])
   p = 8 + dist
   s[p] = sprintf('<a class="mut">%s</a>', s[p])
   paste0(s, collapse='')
