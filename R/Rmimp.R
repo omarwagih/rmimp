@@ -102,11 +102,13 @@ unfactor <- function(df){
 #' @param relative.freq TRUE if each column should be divided by the sum
 #' @param type Type of sequences 'AA' or 'DNA'
 #' @param priors Named character vector containing priors of amino acids.
+#' @param log.bg If true, relative frequencies will be converted to weights using -log of freq/bgfreq
 #' @keywords pwm construct
 #' @export
 #' @examples
 #' # No examples
 PWM <- function(seqs, pseudocount=0.001, relative.freq=T, type='AA', priors=AA_PRIORS_HUMAN, log.bg=F){
+  
   
   # Ensure same length characters 
   seq.len = sapply(seqs, nchar)
@@ -143,6 +145,7 @@ PWM <- function(seqs, pseudocount=0.001, relative.freq=T, type='AA', priors=AA_P
     
     # Do relative frequencies
     if(relative.freq) col = col / sum(col)
+    
     col
   })
   
@@ -155,15 +158,17 @@ PWM <- function(seqs, pseudocount=0.001, relative.freq=T, type='AA', priors=AA_P
   # shannon entropy from http://en.wikipedia.org/wiki/Sequence_logo
   Hi = apply(pwm.matrix, 2, function(col) - sum(col * log2(col), na.rm=T) )
   en = (1/log(2)) * ( (20 - 1)/ (2*length(seqs)) )
-  shan = log2(20) - Hi #+ en
+  shan = log2(20) - Hi + en
   attr(pwm.matrix, 'shannon') = shan
   
   
   if(log.bg) pwm.matrix = apply(pwm.matrix, 2, function(col) log(col / bg.prob))
   
+  
   # Assign AA names to rows/pos col
   rownames(pwm.matrix) = namespace
   colnames(pwm.matrix) = 1:num.pos
+  attr(pwm.matrix, 'log.bg') = log.bg
   return(pwm.matrix)
 }
 
@@ -199,6 +204,25 @@ scoreArray <- function(seqs, pwm){
 }
 
 
+#' Compute classical log score 
+#' 
+#' Computes sum of weights of a pwm for a givet set of sequences.
+#'
+#' @param seqs Sequences to be scored
+#' @param pwm Position weight matrix
+#' @param na.rm Remove NA scores?
+#' @param ignore.ind index to ignore, default is 8: central STY residue
+#'  
+#' @keywords pwm log
+#' @examples
+#' # No Examples
+logscore <- function(seqs, pwm, na.rm=F, ignore.ind=8){
+  scores = sapply(scoreArray(seqs, pwm), function(sa) sum(sa[-ignore.ind], na.rm=T))
+  # Remove NA if requested
+  if(na.rm) scores = scores[!is.na(scores)]
+  return(scores)
+}
+
 #' Compute matrix similarity score as described in MATCH algorithm
 #' 
 #' Computes matrix similarity score of a PWM with a k-mer.
@@ -226,28 +250,33 @@ mss <- function(seqs, pwm, is.kinase.pwm=T, na.rm=F, ignore.ind=8){
   #central.ind = ceiling(ncol(pwm)/2)
   central.ind = ignore.ind
   
-  # Best/worst sequence match
-  oa = scoreArray(bestSequence(pwm), pwm)[[1]]
-  wa = scoreArray(worstSequence(pwm), pwm)[[1]]
-  
-  I = attr(pwm, 'ic2')
-  
-  score.arr = scoreArray(seqs, pwm)
-  scores = sapply(score.arr, function(sa){
-    na = is.na(sa)
-    na[central.ind] = is.kinase.pwm
+  if(attr(pwm, 'log.bg')) {
+    scores = logscore(seqs = seqs, pwm = pwm, na.rm = na.rm, ignore.ind = ignore.ind) 
+  }else{
     
-    # Get information content of non-NA values
-    IC = I[!na]
+    # Best/worst sequence match
+    oa = scoreArray(bestSequence(pwm), pwm)[[1]]
+    wa = scoreArray(worstSequence(pwm), pwm)[[1]]
     
-    # MSS method
-    curr.score  = sum( IC * (sa [!na]), na.rm=T ) 
-    opt.score   = sum( IC * (oa [!na]), na.rm=T )
-    worst.score = sum( IC * (wa [!na]), na.rm=T )
-    score.final = ( (curr.score - worst.score) / (opt.score - worst.score) )
-    score.final
-  })
-  
+    I = attr(pwm, 'ic2')
+    
+    score.arr = scoreArray(seqs, pwm)
+    scores = sapply(score.arr, function(sa){
+      na = is.na(sa)
+      na[central.ind] = is.kinase.pwm
+      
+      # Get information content of non-NA values
+      IC = I[!na]
+      
+      # MSS method
+      curr.score  = sum( IC * (sa [!na]), na.rm=T ) 
+      opt.score   = sum( IC * (oa [!na]), na.rm=T )
+      worst.score = sum( IC * (wa [!na]), na.rm=T )
+      score.final = ( (curr.score - worst.score) / (opt.score - worst.score) )
+      score.final
+    })
+  }
+ 
   if(central.res != '*'){
     keep = grepl(central.res, substr(seqs, central.ind, central.ind))
     scores[!keep] = NA
@@ -479,6 +508,7 @@ scoreWtMt <- function(pwm, mut_ps, is.kinase.pwm=T, thresh.bg=1, thresh.fg=0, th
 #'  By default this is the 10th percentile of the foreground distribution of scores. Anything above the threshold is considered a positive hit.
 #' @param thresh.log2 Threshold for the absolute value of log ratio. Anything less than this value is discarded (default: 0).
 #' @param include.cent If TRUE, gains and losses caused by mutation in the central STY residue are kept. Scores of peptides with a non-STY central residue is given a score of -1 (default: FALSE).
+#' @param family.models By default, individual kinase specificity models used to scan for rewiring events. Set to TRUE If you would like to use specificity models of the kinase families (default: FALSE).
 #' 
 #' @return 
 #' The data is returned in a \code{data.frame} with the following columns:
@@ -514,7 +544,7 @@ scoreWtMt <- function(pwm, mut_ps, is.kinase.pwm=T, thresh.bg=1, thresh.fg=0, th
 #' 
 #' # Show head of results
 #' head(results)
-mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, display.results=T, include.cent=F){
+mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, display.results=T, include.cent=F, family.models=F){
   flank=7
   MUT_REGEX = '^[A-Z]\\d+[A-Z]$'
   DIG_REGEX = '^\\d+$'
@@ -605,7 +635,8 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
   
   
   writeLines('Loading kinase specificity models and cutoffs ...')
-  mdata = readRDS( file.path(BASE_DIR, 'mimp_data.rds'))
+  data.file = ifelse(family.models, 'mimp_data_fam.rds', 'mimp_data.rds')
+  mdata = readRDS( file.path(BASE_DIR, data.file))
   pwms = mdata$pwms
   perc = mdata$perc
   cutoffs = mdata$cutoffs

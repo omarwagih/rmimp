@@ -3,7 +3,7 @@
 \title{Predict the impact of single variants on phosphorylation.}
 \usage{
 mimp(muts, seqs, psites, perc.bg = 90, perc.fg = 10, thresh.log2 = 0,
-  display.results = T, include.cent = F)
+  display.results = T, include.cent = F, family.models = F)
 }
 \arguments{
   \item{muts}{Mutation data file: a space delimited text
@@ -45,6 +45,11 @@ mimp(muts, seqs, psites, perc.bg = 90, perc.fg = 10, thresh.log2 = 0,
   mutation in the central STY residue are kept. Scores of
   peptides with a non-STY central residue is given a score
   of -1 (default: FALSE).}
+
+  \item{family.models}{By default, individual kinase
+  specificity models used to scan for rewiring events. Set
+  to TRUE If you would like to use specificity models of
+  the kinase families (default: FALSE).}
 }
 \value{
 The data is returned in a \code{data.frame} with the

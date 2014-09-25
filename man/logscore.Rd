@@ -1,0 +1,26 @@
+\name{logscore}
+\alias{logscore}
+\title{Compute classical log score}
+\usage{
+logscore(seqs, pwm, na.rm = F, ignore.ind = 8)
+}
+\arguments{
+  \item{seqs}{Sequences to be scored}
+
+  \item{pwm}{Position weight matrix}
+
+  \item{na.rm}{Remove NA scores?}
+
+  \item{ignore.ind}{index to ignore, default is 8: central
+  STY residue}
+}
+\description{
+Computes sum of weights of a pwm for a givet set of
+sequences.
+}
+\examples{
+# No Examples
+}
+\keyword{log}
+\keyword{pwm}
+

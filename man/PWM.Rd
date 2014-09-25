@@ -18,6 +18,9 @@ PWM(seqs, pseudocount = 0.001, relative.freq = T, type = "AA",
 
   \item{priors}{Named character vector containing priors of
   amino acids.}
+
+  \item{log.bg}{If true, relative frequencies will be
+  converted to weights using -log of freq/bgfreq}
 }
 \description{
 Makes a position weight matrix given aligned sequences.
