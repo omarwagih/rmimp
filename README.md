@@ -19,8 +19,8 @@ library("devtools")
 Then install and load `MIMP` package from github:
 
 ```r
-install_github("omarwagih/mimp")
-library("mimp")
+install_github("omarwagih/rmimp")
+library("rmimp")
 ```
 
 ## Running MIMP on sample data:
@@ -28,14 +28,14 @@ library("mimp")
 To start using MIMP, try loading paths to the sample data, which comes with the package:
 ```r
 # Get the path to example mutation data 
-mut.file = system.file("extdata", "mutation_data.txt", package = "mimp")
+mut.file = system.file("extdata", "mutation_data.txt", package = "rmimp")
 
 # Get the path to example FASTA sequence data 
-seq.file = system.file("extdata", "sequence_data", package = "mimp")
+seq.file = system.file("extdata", "sequence_data", package = "rmimp")
 
 ```
 
-To take a look at the sample data, try running the following:
+Take a look at the sample data. Try running the following:
 
 ```r
 browseURL(mut.file)
