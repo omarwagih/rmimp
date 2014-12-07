@@ -1,4 +1,4 @@
-BASE_DIR = system.file("extdata", "", package = "MIMP")
+BASE_DIR = system.file("extdata", "", package = "rmimp")
 #BASE_DIR = '~/Development/mimp/inst/extdata/'
 
 AA = c('A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V')
@@ -508,7 +508,7 @@ scoreWtMt <- function(pwm, mut_ps, is.kinase.pwm=T, thresh.bg=1, thresh.fg=0, th
 #'  By default this is the 10th percentile of the foreground distribution of scores. Anything above the threshold is considered a positive hit.
 #' @param thresh.log2 Threshold for the absolute value of log ratio. Anything less than this value is discarded (default: 0).
 #' @param include.cent If TRUE, gains and losses caused by mutation in the central STY residue are kept. Scores of peptides with a non-STY central residue is given a score of -1 (default: FALSE).
-#' @param family.models By default, individual kinase specificity models used to scan for rewiring events. Set to TRUE If you would like to use specificity models of the kinase families (default: FALSE).
+#' @param model.data Name of specifcity model data to use, can be "hconf" : individual experimental kinase specificity models used to scan for rewiring events. For experimental kinase specificity models, grouped by family, set to "hconf-fam". Both are considered high confidence. For lower confidence predicted specificity models , set to "lconf". NOTE: Predicted models are purely speculative and should be used with EXTREME CAUTION.
 #' 
 #' @return 
 #' The data is returned in a \code{data.frame} with the following columns:
@@ -522,6 +522,7 @@ scoreWtMt <- function(pwm, mut_ps, is.kinase.pwm=T, thresh.bg=1, thresh.fg=0, th
 #' \item{score_mt}{matrix similarity score of the mutated phosphosite }
 #' \item{log_ratio}{Log2 ratio between mutant and wildtype scores. A high positive log ratio represents a high confidence gain-of-signaling event. A high negative log ratio represents a high confidence loss-of-signaling event.}
 #' \item{pwm}{name of the kinase being rewiried}
+#' \item{pwm_fam}{family/subfamily of kinase being rewired. If a kinase subfamily is available the family and subfamily will be seprated by an underscore e.g. "DMPK_ROCK". If no subfamily is available, only the family is shown e.g. "GSK"}
 #' \item{perc_wt}{Percentile rank of the wt score}
 #' \item{perc_mt}{Percentile rank of the mutant score}
 #' 
@@ -530,10 +531,10 @@ scoreWtMt <- function(pwm, mut_ps, is.kinase.pwm=T, thresh.bg=1, thresh.fg=0, th
 #' @export
 #' @examples
 #' # Get the path to example mutation data 
-#' mut.file = system.file("extdata", "mutation_data.txt", package = "MIMP")
+#' mut.file = system.file("extdata", "mutation_data.txt", package = "rmimp")
 #' 
 #' # Get the path to example FASTA sequence data 
-#' seq.file = system.file("extdata", "sequence_data.txt", package = "MIMP")
+#' seq.file = system.file("extdata", "sequence_data.txt", package = "rmimp")
 #' 
 #' # View the files in a text editor
 #' browseURL(mut.file)
@@ -544,7 +545,7 @@ scoreWtMt <- function(pwm, mut_ps, is.kinase.pwm=T, thresh.bg=1, thresh.fg=0, th
 #' 
 #' # Show head of results
 #' head(results)
-mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, display.results=T, include.cent=F, family.models=F){
+mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, display.results=T, include.cent=F, model.data='hconf'){
   flank=7
   MUT_REGEX = '^[A-Z]\\d+[A-Z]$'
   DIG_REGEX = '^\\d+$'
@@ -553,6 +554,10 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
   perc.fg = as.integer(perc.fg)
   if(!is.numeric(perc.bg) | perc.bg > 100 | perc.bg < 0) stop('perc.bg must be an integer between 0-100')
   if(!is.numeric(perc.fg) | perc.fg > 100 | perc.fg < 0) stop('perc.fg must be an integer between 0-100')
+  
+  z = c('hconf', 'hconf-fam', 'lconf')
+  if(length(model.data) != 1 | !is.character(model.data)) stop('model.data must be a character of length one')
+  if(!model.data %in% z) stop('model.data must be one of the following: "hconf", "hconf-fam", or "lconf"')
   
   # 1. Read sequence data
   writeLines('Reading fasta data from file ...')
@@ -635,7 +640,9 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
   
   
   writeLines('Loading kinase specificity models and cutoffs ...')
-  data.file = ifelse(family.models, 'mimp_data_fam.rds', 'mimp_data.rds')
+  mdata = c('hconf'='mimp_data.rds', 'hconf-fam'='mimp_data_fam.rds', 'lconf'='mimp_data_newman.rds')
+  data.file = mdata[model.data]
+  
   mdata = readRDS( file.path(BASE_DIR, data.file))
   pwms = mdata$pwms
   perc = mdata$perc
@@ -649,9 +656,16 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
     c_fg = cutoffs[[name]]$fg[perc.fg+1]
     c(c_bg, c_fg)
   }))
+  
+  
   ct = as.data.frame(ct, stringsAsFactors=F)
   ct$pwm = names(pwms)
   colnames(ct) = c('bg', 'fg', 'pwm')
+  
+  
+  # Use only cases where bg cutoff is less than fg
+  keep = ct[ct$bg < ct$fg, 'pwm']
+  pwms = pwms[keep]
   
   scored = lapply(1:length(pwms), function(i){
     setTxtProgressBar(pb, i)
@@ -660,6 +674,7 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
     thresh.bg = cutoffs[[name]]$bg[perc.bg+1]
     thresh.fg = cutoffs[[name]]$fg[perc.fg+1]
     ss = scoreWtMt(pwm, mut_psites, T, thresh.bg, thresh.fg, thresh.log2, include.cent)
+    
     if(nrow(ss)>0) ss$pwm = name
     ss
   })
@@ -675,6 +690,15 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
   
   # Merge all data frames
   s = do.call('rbind', scored)
+  
+  # Kinase family data
+  s$pwm_fam = NA
+  if(model.data != 'hconf-fam'){
+    kin2fam = readRDS( file.path(BASE_DIR, 'kin2fam.rds'))
+    tpwm = gsub('-ST|-Y', '', s$pwm)
+    ind = tpwm %in% names(kin2fam)
+    s$pwm_fam[ind] = kin2fam[tpwm[ind]]
+  }
   
   s$effect = 'Gain'
   s$effect[s$score_wt > s$score_mt] = 'Loss'
@@ -702,6 +726,10 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
   s$perc_mt = r$perc_mt
   
   s = s[order(s$log_ratio, decreasing=T),]
+  attr(s, 'model.data') = model.data
+  
+  
+  
   if(display.results) results2html(s)
   
   writeLines('Analysis complete!')
@@ -709,7 +737,7 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
   
   s = s[,!names(s) %in% c('ref_aa', 'alt_aa', 'mut_pos')]
   attr(s, 'cutoffs') = ct
-  
+  attr(s, 'model.data') = model.data
   return(s)
 }
 
@@ -736,7 +764,7 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
 #' 
 #' @keywords display mimp
 #' @export
-dohtml <- function(x, LOGO_DIR){
+dohtml <- function(x, LOGO_DIR, HL_DIR){
   x = unfactor(x)
   x$score_wt = signif(x$score_wt, 3)
   x$score_mt = signif(x$score_mt, 3)
@@ -747,7 +775,7 @@ dohtml <- function(x, LOGO_DIR){
   
   x$log_ratio[is.na(x$log_ratio)] = '-'
   
-  x$pwm = gsub('-', '_', x$pwm)
+  #x$pwm = gsub('-', '_', x$pwm)
   
   cnt = as.list( table(x$effect) )
   n_gain = ifelse( is.null( cnt[['Gain']] ), 0, cnt[['Gain']])
@@ -759,8 +787,12 @@ dohtml <- function(x, LOGO_DIR){
     seq = sprintf('%s<br>%s', .htmlSeq(r$wt, d), .htmlSeq(r$mt, d))
     scr = sprintf('%s<br>%s', r$score_wt, r$score_mt)
     prc = sprintf('%s<br>%s', r$perc_wt, r$perc_mt)
-    logo = file.path(LOGO_DIR, paste0(r$pwm, '.png'))
-    t = sprintf('<a class="hide name">%s</a><img src="%s" class="logo" alt=%s/>', r$pwm, normalizePath(logo), r$pwm)
+    logo = file.path(LOGO_DIR, paste0(r$pwm, '.svg'))
+    hl = file.path(HL_DIR, paste0(r$mut_dist, '.svg'))
+    t = sprintf('<a class="hide name">%s</a>
+                <img style="background: url(%s) no-repeat;"
+                src="%s" class="logo" alt="%s" />', 
+                r$pwm, normalizePath(hl),  normalizePath(logo), r$pwm)
     
     if(r$effect == 'Loss'){
       eff = '<a class="loss">Loss</a>'
@@ -810,9 +842,15 @@ results2html <- function(x, max.rows=5000){
     warning(sprintf('Rows of resulting data exceeds %s and cannot be displayed', max.rows))
     return(1)
   }
-  #BASE_DIR = system.file("extdata", "", package = "MIMP")
-  LOGO_DIR = file.path(BASE_DIR, 'html', 'images', 'logos')
-  lines = dohtml(x, LOGO_DIR)
+  #BASE_DIR = system.file("extdata", "", package = "rmimp")
+  
+  model.data = attr(x, 'model.data')
+  if(is.null(model.data)) stop('Input data must be generated using the mimp function. Please try again.')
+  z = c('hconf'='logos', 'hconf-fam'='logos_fam', 'lconf'='logos_newman')
+  
+  LOGO_DIR = file.path(BASE_DIR, 'html', 'images', z[model.data])
+  HL_DIR = file.path(BASE_DIR, 'html', 'images', 'highlight')
+  lines = dohtml(x, LOGO_DIR, HL_DIR)
   save = file.path(BASE_DIR, 'html', 'MIMP_results.html')
   zz <- file(save,"w")
   tt = readLines( file.path(BASE_DIR, 'html', 'index.html'))

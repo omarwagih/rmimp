@@ -1,6 +1,6 @@
-Package: MIMP
+Package: rmimp
 Type: Package
-Title: Predicting the impact of single nucleotide variants on kinase-substrate
+Title: Predicting the impact of mutations on kinase-substrate
     phosphorylation
 Version: 1.0
 Date: 2013-10-29

@@ -16,6 +16,11 @@
 		<script type="text/javascript" charset="utf-8" language="javascript" src="./js/jquery.dataTables.js"></script>
 		<script type="text/javascript" charset="utf-8" language="javascript" src="./js/DT_bootstrap.js"></script>
 		<script type="text/javascript" charset="utf-8" language="javascript" src="./js/jquery.zoom.min.js"></script>
+		
+
+		<link rel="stylesheet" type="text/css" href="./js/intensezoom/intense.css">
+		<script type="text/javascript" charset="utf-8" language="javascript" src="./js/intensezoom/intense.js"></script>
+
 		<script>
 			
 		
@@ -34,6 +39,13 @@
 				    }
 				    
 				});*/
+				$('.intense-figure').remove();
+				$('.logo').addClass('zoom');
+				var elements = document.querySelectorAll( '.logo' );
+				Intense( elements );
+
+		        document.body.style.overflow = '';
+				
 			}
 			
 			$(document).ready(function(){
@@ -93,7 +105,7 @@ div.row{
 	</head>
 	<body>
 	<div>
-	<center><img id="mimp-logo" src="./images/mimp_logo.png" alt="MIMP logo"/><center>
+	<center><img id="mimp-logo" src="./images/mimp_logo.svg" alt="MIMP logo"/><center>
 	
 	<span id="loss-label" class="label label-danger">Loss <span class="badge" id="loss-badge">NA</span></span>
 	<span id="gain-label" class="label label-success">Gain <span class="badge" id="gain-badge">NA</span></span>
