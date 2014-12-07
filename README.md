@@ -1,4 +1,4 @@
-![mimp logo](https://cdn.rawgit.com/omarwagih/rmimp/master/inst/extdata/html/images/mimp_logo.svg) Predicting the impact of mutations on kinase-substrate phosphorylation in R
+![mimp logo](https://cdn.rawgit.com/omarwagih/rmimp/master/inst/extdata/html/images/mimp_logo.svg =250x) Predicting the impact of mutations on kinase-substrate phosphorylation in R
 ===============================================================
 
 ## Installation
