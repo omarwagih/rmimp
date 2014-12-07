@@ -63,3 +63,6 @@ For a full list of all options, take a look at the documentation by typing the f
 ```r
 ?mimp
 ```
+
+## Contact
+If you have any feedback, suggestions or questions, please drop me a line at (wagih(at)ebi.ac.uk) or open an issue on github.
