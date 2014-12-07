@@ -16,10 +16,12 @@ install.packages("devtools")
 library("devtools")
 ```
 
-Then install and load `MIMP` package from github:
+Then install and load `MIMP` package from github (**this may take a few minutes, please be patient**):
 
 ```r
+# Download and install rmimp package
 install_github("omarwagih/rmimp")
+# Load the package
 library("rmimp")
 ```
 
