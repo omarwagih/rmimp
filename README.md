@@ -16,18 +16,21 @@ install.packages("devtools")
 library("devtools")
 ```
 
-Then install and load `MIMP` package from github (**this may take a few minutes, please be patient**):
+Then download and install the `rmimp` package from github (**this may take a few minutes, please be patient**):
 
 ```r
-# Download and install rmimp package
 install_github("omarwagih/rmimp")
-# Load the package
+```
+
+Load the `rmimp` package into R, and you're ready to go!
+
+```r
 library("rmimp")
 ```
 
 ## Running MIMP on sample data:
 
-To start using MIMP, try loading paths to the sample data, which comes with the package:
+To start using MIMP, try loading paths to the sample data, which come with the package:
 ```r
 # Get the path to example mutation data 
 mut.file = system.file("extdata", "mutation_data.txt", package = "rmimp")
