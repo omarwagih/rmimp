@@ -36,7 +36,7 @@ To start using MIMP, try loading paths to the sample data, which come with the p
 mut.file = system.file("extdata", "mutation_data.txt", package = "rmimp")
 
 # Get the path to example FASTA sequence data 
-seq.file = system.file("extdata", "sequence_data", package = "rmimp")
+seq.file = system.file("extdata", "sequence_data.txt", package = "rmimp")
 
 ```
 
