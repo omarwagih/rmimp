@@ -1,10 +1,9 @@
 BASE_DIR = system.file("extdata", "", package = "rmimp")
 
-if(T){
-  
-  BASE_DIR = '~/Development/mimp/inst/extdata/'
-  writeLines('Warning: remove base dir')
-}
+# if(T){
+#   BASE_DIR = '~/Development/mimp/inst/extdata/'
+#   writeLines('Warning: remove base dir')
+# }
 
 
 
