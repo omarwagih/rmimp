@@ -104,12 +104,31 @@ div.row{
 		</style>
 	</head>
 	<body>
-	<div>
+
+	<div id="result-loader">
+		<center>
+			
+			<h1 id="loading-title" style="margin-top:25%">Loading results <span id="dots">...</span></h1>
+			<script>
+			var dotspan = document.getElementById('dots');
+	        window.setInterval(function(){
+	           if(dotspan.textContent == '.....'){
+	              dotspan.textContent = '.';
+	           }
+	           else{
+	              dotspan.textContent += '.';
+	           }
+	        }, 1000);
+		</script>
+		</center>
+	</div>
+
+	<div class="result-wrap">
 	<center><img id="mimp-logo" src="./images/mimp_logo.svg" alt="MIMP logo"/><center>
 	
-	<span id="loss-label" class="label label-danger">Loss <span class="badge" id="loss-badge">NA</span></span>
-	<span id="gain-label" class="label label-success">Gain <span class="badge" id="gain-badge">NA</span></span>
-	<span class="label label-default">Mutations <span class="badge" id="mut-badge">NA</span></span>
+	<span id="loss-label" class="label label-danger">Loss <span class="badge" id="loss-badge">0</span></span>
+	<span id="gain-label" class="label label-success">Gain <span class="badge" id="gain-badge">0</span></span>
+	<span class="label label-default">Mutations <span class="badge" id="mut-badge">0</span></span>
 	</div>
 	<hr>
 	
@@ -148,4 +167,13 @@ div.row{
 
     </tbody>
 </table>
-</body></html>
+
+<script>
+		$(window).load(function() {
+			$("#result-wrap").removeClass("hide");
+			$("#result-loader").fadeOut("slow");
+		});
+</script>
+</body>
+
+</html>

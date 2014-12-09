@@ -1,5 +1,12 @@
 BASE_DIR = system.file("extdata", "", package = "rmimp")
-#BASE_DIR = '~/Development/mimp/inst/extdata/'
+
+if(T){
+  
+  BASE_DIR = '~/Development/mimp/inst/extdata/'
+  writeLines('Warning: remove base dir')
+}
+
+
 
 AA = c('A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V')
 DNA = c('A', 'T', 'G', 'C')
