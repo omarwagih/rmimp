@@ -444,6 +444,10 @@ pSNVs <- function(muts, psites, seqs, flank=7, multicore=F){
   
   mut_ps = mut_ps[!sapply(mut_ps, is.null)]
   mut_ps = do.call(rbind, mut_ps)
+  
+  # We have no pSNVs
+  if(is.null(mut_ps)) return(mut_ps)
+  
   mut_ps$wt = flankingSequence(seqs[mut_ps$gene], mut_ps$psite_pos, flank)
   mut_ps = mut_ps[,c('gene', 'mut', 'ref_aa', 'alt_aa', 'mut_pos', 
                      'psite_pos', 'mut_dist', 'wt', 'mt')]
@@ -626,6 +630,21 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
                     length(z), paste0(z, collapse=', ')))
     pd = pd[!pd$gene %in% z,]
   }
+  md = md[md$gene %in% pd$gene,]
+  seqdata = seqdata[names(seqdata) %in% pd$gene]
+  
+  if(nrow(pd) == 0){
+    warning('No phosphorylation data remaining after filtering!')
+    return(NULL)
+  }
+  if(nrow(md) == 0){
+    warning('No mutation data remaining after filtering!')
+    return(NULL)
+  }
+  if(length(seqdata) == 0){
+    warning('No sequence data remaining after filtering!')
+    return(NULL)
+  }
   
   psiteAA = sapply(1:nrow(pd), function(i){
     j = pd$pos[i]
@@ -643,7 +662,10 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
   }
   
   mut_psites = pSNVs(md, pd, seqdata, flank)
-  
+  if(is.null(mut_psites)){
+    warning('No pSNVs were found!')
+    return(NULL)
+  }
   
   writeLines('Loading kinase specificity models and cutoffs ...')
   mdata = c('hconf'='mimp_data.rds', 'hconf-fam'='mimp_data_fam.rds', 'lconf'='mimp_data_newman.rds')
