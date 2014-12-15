@@ -695,6 +695,11 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
   keep = ct[ct$bg < ct$fg, 'pwm']
   pwms = pwms[keep]
   
+  if(length(pwms) == 0){
+    warning('No PWMs available for given alpha and beta cutoffs!')
+    return(NULL)
+  }
+  
   scored = lapply(1:length(pwms), function(i){
     setTxtProgressBar(pb, i)
     pwm = pwms[[i]]
