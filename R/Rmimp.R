@@ -652,11 +652,12 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
   wrongPsite = psiteAA != '' & !grepl('S|T|Y', psiteAA)
   
   if(sum(wrongPsite) > 0){
+    wrongPsiteHead = head(wrongPsite)
     wr = head(pd[wrongPsite,])
-    wr = sprintf('%s: expected STY at %s found %s', wr$gene, wr$pos, psiteAA[wrongPsite])
+    wr = sprintf('%s: expected STY at %s found %s', wr$gene, wr$pos, psiteAA[wrongPsiteHead])
     warning(sprintf('There are %s p-site(s) that do not correspond to an S, T or Y. These will be ignored:\n%s%s', 
-                    sum(wrongPsite), paste(wr, collapse='\n'), 
-                    ifelse(sum(wrongPsite) > 6, '\n...', '') ))
+                    sum(wrongPsiteHead), paste(wr, collapse='\n'), 
+                    ifelse(sum(wrongPsiteHead) > 6, '\n...', '') ))
   }
   
   mut_psites = pSNVs(md, pd, seqdata, flank)
