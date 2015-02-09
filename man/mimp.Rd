@@ -50,6 +50,7 @@ The data is returned in a \code{data.frame} with the following columns:
 \item{score_mt}{matrix similarity score of the mutated phosphosite }
 \item{log_ratio}{Log2 ratio between mutant and wildtype scores. A high positive log ratio represents a high confidence gain-of-signaling event. A high negative log ratio represents a high confidence loss-of-signaling event.}
 \item{pwm}{name of the kinase being rewiried}
+\item{nseqs}{number of sequences used to construct the PWM. PWMs constructed with a higher number of sequences are generally considered of better quality.}
 \item{pwm_fam}{family/subfamily of kinase being rewired. If a kinase subfamily is available the family and subfamily will be seprated by an underscore e.g. "DMPK_ROCK". If no subfamily is available, only the family is shown e.g. "GSK"}
 \item{perc_wt}{Percentile rank of the wt score}
 \item{perc_mt}{Percentile rank of the mutant score}

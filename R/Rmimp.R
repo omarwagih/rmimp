@@ -6,7 +6,6 @@ BASE_DIR = system.file("extdata", "", package = "rmimp")
 # }
 
 
-
 AA = c('A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V')
 DNA = c('A', 'T', 'G', 'C')
 RNA = c('A', 'U', 'G', 'C')
@@ -18,7 +17,6 @@ DNA_PRIORS_HUMAN =   c(A=0.25, C=0.25, G=0.25, T=0.25)
 AA_PRIORS_YEAST  =   c(A=0.055, R=0.045, N=0.061, D=0.058, C=0.013, Q=0.039, E=0.064, G=0.05, H=0.022, I=0.066,
                        L=0.096, K=0.073, M=0.021, F=0.045, P=0.044, S=0.091, T=0.059, W=0.01, Y=0.034, V=0.056)
 DNA_PRIORS_YEAST =   c(A=0.310, C=0.191, G=0.191, T=0.309)
-
 
 #' Save a PWM matrix object to transfac format
 #'
@@ -147,7 +145,7 @@ PWM <- function(seqs, pseudocount=0.001, relative.freq=T, type='AA', priors=AA_P
     names(col) = namespace
     
     # Do pseudocounts
-    col = col + (pseudocount * bg.prob) 
+    col = col + (sqrt(length(seqs))/20)#(pseudocount * bg.prob) 
     
     # Do relative frequencies
     if(relative.freq) col = col / sum(col)
@@ -167,9 +165,7 @@ PWM <- function(seqs, pseudocount=0.001, relative.freq=T, type='AA', priors=AA_P
   shan = log2(20) - Hi + en
   attr(pwm.matrix, 'shannon') = shan
   
-  
-  if(log.bg) pwm.matrix = apply(pwm.matrix, 2, function(col) log(col / bg.prob))
-  
+  if(log.bg) pwm.matrix = apply(pwm.matrix, 2, function(col) log2(col / bg.prob))
   
   # Assign AA names to rows/pos col
   rownames(pwm.matrix) = namespace
@@ -403,8 +399,9 @@ pSNVs <- function(muts, psites, seqs, flank=7, multicore=F){
   wrongMut = mutAA != '' & mutAA != muts$ref_aa
   
   if(sum(wrongMut) > 0){
-    wr = head(muts[wrongMut,])
-    wr = sprintf('%s: expected %s at %s found %s', wr$gene, wr$ref_aa, wr$mut_pos, mutAA[wrongMut])
+    wrongMutHead = head(wrongMut)
+    wr = head(muts[wrongMutHead,])
+    wr = sprintf('%s: expected %s at %s found %s', wr$gene, wr$ref_aa, wr$mut_pos, mutAA[wrongMutHead])
     warning(sprintf('The reference amino acid for %s mutation(s) do not correspond to the amino acid in the sequence:\n%s',
                     sum(wrongMut), paste0(wr, collapse='\n'),
                     ifelse(sum(wrongMut) > 6, '\n...', '') ))
@@ -532,6 +529,7 @@ scoreWtMt <- function(pwm, mut_ps, is.kinase.pwm=T, thresh.bg=1, thresh.fg=0, th
 #' \item{score_mt}{matrix similarity score of the mutated phosphosite }
 #' \item{log_ratio}{Log2 ratio between mutant and wildtype scores. A high positive log ratio represents a high confidence gain-of-signaling event. A high negative log ratio represents a high confidence loss-of-signaling event.}
 #' \item{pwm}{name of the kinase being rewiried}
+#' \item{nseqs}{number of sequences used to construct the PWM. PWMs constructed with a higher number of sequences are generally considered of better quality.}
 #' \item{pwm_fam}{family/subfamily of kinase being rewired. If a kinase subfamily is available the family and subfamily will be seprated by an underscore e.g. "DMPK_ROCK". If no subfamily is available, only the family is shown e.g. "GSK"}
 #' \item{perc_wt}{Percentile rank of the wt score}
 #' \item{perc_mt}{Percentile rank of the mutant score}
@@ -673,6 +671,7 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
   
   mdata = readRDS( file.path(BASE_DIR, data.file))
   pwms = mdata$pwms
+  nseqs = mdata$nseqs
   perc = mdata$perc
   cutoffs = mdata$cutoffs
   
@@ -690,15 +689,18 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
   ct$pwm = names(pwms)
   colnames(ct) = c('bg', 'fg', 'pwm')
   
+  # If beta is greater than alpha, CAP it at the alpha value.
+  ind = ct$bg > ct$fg
+  ct$bg[ind] = ct$fg[ind]
   
   # Use only cases where bg cutoff is less than fg
-  keep = ct[ct$bg < ct$fg, 'pwm']
-  pwms = pwms[keep]
-  
-  if(length(pwms) == 0){
-    warning('No PWMs available for given alpha and beta cutoffs!')
-    return(NULL)
-  }
+#   keep = ct[ct$bg < ct$fg, 'pwm']
+#   pwms = pwms[keep]
+#   
+#   if(length(pwms) == 0){
+#     warning('No PWMs available for given alpha and beta cutoffs!')
+#     return(NULL)
+#   }
   
   scored = lapply(1:length(pwms), function(i){
     setTxtProgressBar(pb, i)
@@ -708,7 +710,10 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
     thresh.fg = cutoffs[[name]]$fg[perc.fg+1]
     ss = scoreWtMt(pwm, mut_psites, T, thresh.bg, thresh.fg, thresh.log2, include.cent)
     
-    if(nrow(ss)>0) ss$pwm = name
+    if(nrow(ss)>0){
+      ss$pwm = name
+      ss$nseqs = nseqs[[name]]
+    }
     ss
   })
   
@@ -767,6 +772,7 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
   
   writeLines('Analysis complete!')
   rownames(s) = NULL
+  
   
   s = s[,!names(s) %in% c('ref_aa', 'alt_aa', 'mut_pos')]
   attr(s, 'cutoffs') = ct
