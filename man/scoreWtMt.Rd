@@ -3,21 +3,23 @@
 \alias{scoreWtMt}
 \title{Score wt and mt sequences for a pwm}
 \usage{
-scoreWtMt(pwm, mut_ps, is.kinase.pwm = T, thresh.bg = 1, thresh.fg = 0,
-  thresh.log2 = 0, include.cent = F)
+scoreWtMt(pwm, mut_ps, params, auc, is.kinase.pwm = T, prob.thresh = 0.5,
+  log2.thresh = 1, include.cent = F)
 }
 \arguments{
 \item{pwm}{Position weight matrix of interest}
 
 \item{mut_ps}{psnvs data frame containing wt and mt sequences computed from pSNVs function}
 
+\item{params}{Mixture model parameters for foreground and background distributions. This is precomputed and comes built into mimp.}
+
+\item{auc}{The AUC of the kinase in question. This is precomputed and comes built into mimp.}
+
 \item{is.kinase.pwm}{TRUE if pwm is that of a kinase}
 
-\item{thresh.bg}{Anything below this threshold is considered a negative hit}
+\item{prob.thresh}{Probability threshold of gains and losses. This value should be between 0.5 and 1.}
 
-\item{thresh.fg}{Anything above this threshold is considered a positive hit}
-
-\item{thresh.log2}{Threshold for the absolute value of log ratio. Anything less than this value is discarded.}
+\item{log2.thresh}{Threshold for the absolute value of log ratio between wild type and mutant scores. Anything less than this value is discarded (default: 1).}
 
 \item{include.cent}{If TRUE, gains and losses caused by mutation in the central STY residue are kept}
 }

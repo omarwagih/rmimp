@@ -3,7 +3,7 @@
 \alias{mimp}
 \title{Predict the impact of single variants on phosphorylation.}
 \usage{
-mimp(muts, seqs, psites, perc.bg = 90, perc.fg = 10, thresh.log2 = 0,
+mimp(muts, seqs, psites, prob.thresh = 0.5, log2.thresh = 1,
   display.results = T, include.cent = F, model.data = "hconf")
 }
 \arguments{
@@ -26,34 +26,30 @@ name of each element is that of the protein. Example: list(TP53="ABCXYZ", CDK2="
    CTNNB1 \tab 44\cr
 }}
 
-\item{perc.bg}{Percentile value between 0 - 100. This value is used to compute a threshold, beta from the negative (background) distribution of scores.
-By default this is the 90th percentile of the background distribution of scores. Anything below the threshold is considered a negative hit.}
+\item{prob.thresh}{Probability threshold of gains and losses. This value should be between 0.5 and 1.}
 
-\item{perc.fg}{Percentile value between 0 - 100. This value is used to compute a threshold, alpha from the positive (foreground) distribution of scores.
-By default this is the 10th percentile of the foreground distribution of scores. Anything above the threshold is considered a positive hit.}
+\item{log2.thresh}{Threshold for the absolute value of log ratio between wild type and mutant scores. Anything less than this value is discarded (default: 1).}
 
-\item{thresh.log2}{Threshold for the absolute value of log ratio. Anything less than this value is discarded (default: 0).}
+\item{include.cent}{If TRUE, gains and losses caused by mutation in the central STY residue are kept. Scores of peptides with a non-STY central residue is given a score of 0 (default: FALSE).}
 
-\item{include.cent}{If TRUE, gains and losses caused by mutation in the central STY residue are kept. Scores of peptides with a non-STY central residue is given a score of -1 (default: FALSE).}
-
-\item{model.data}{Name of specifcity model data to use, can be "hconf" : individual experimental kinase specificity models used to scan for rewiring events. For experimental kinase specificity models, grouped by family, set to "hconf-fam". Both are considered high confidence. For lower confidence predicted specificity models , set to "lconf". NOTE: Predicted models are purely speculative and should be used with EXTREME CAUTION.}
+\item{model.data}{Name of specifcity model data to use, can be "hconf" : individual experimental kinase specificity models used to scan for rewiring events. For experimental kinase specificity models, grouped by family, set to "hconf-fam". Both are considered high confidence. For lower confidence predicted specificity models , set to "lconf". NOTE: Predicted models are purely speculative and should be used with caution}
 }
 \value{
 The data is returned in a \code{data.frame} with the following columns:
-\item{gene}{gene with the rewiring event}
-\item{mut}{mutation causing the rewiring event}
-\item{psite_pos}{position of the central residue of the phosphosite}
-\item{mut_dist}{distance of the mutation from the central phosphosite}
-\item{wt}{sequence of the wildtype phosphosite (before the mutation) }
-\item{mt}{sequence of the mutated phosphosite (after the mutation)}
-\item{score_wt}{matrix similarity score of the wildtype phosphosite }
-\item{score_mt}{matrix similarity score of the mutated phosphosite }
-\item{log_ratio}{Log2 ratio between mutant and wildtype scores. A high positive log ratio represents a high confidence gain-of-signaling event. A high negative log ratio represents a high confidence loss-of-signaling event.}
-\item{pwm}{name of the kinase being rewiried}
-\item{nseqs}{number of sequences used to construct the PWM. PWMs constructed with a higher number of sequences are generally considered of better quality.}
-\item{pwm_fam}{family/subfamily of kinase being rewired. If a kinase subfamily is available the family and subfamily will be seprated by an underscore e.g. "DMPK_ROCK". If no subfamily is available, only the family is shown e.g. "GSK"}
-\item{perc_wt}{Percentile rank of the wt score}
-\item{perc_mt}{Percentile rank of the mutant score}
+\item{gene}{Gene with the rewiring event}
+\item{mut}{Mutation causing the rewiring event}
+\item{psite_pos}{Position of the central residue of the phosphosite}
+\item{mut_dist}{Distance of the mutation relative to the central phosphosite}
+\item{wt}{Sequence of the wildtype phosphosite (before the mutation) }
+\item{mt}{Sequence of the mutated phosphosite (after the mutation)}
+\item{score_wt}{Matrix similarity score of the wildtype phosphosite }
+\item{score_mt}{Matrix similarity score of the mutated phosphosite }
+\item{log_ratio}{Log2 ratio between mutant and wildtype scores. A high positive log ratio represents a high confidence gain-of-signaling event. A high negative log ratio represents a high confidence loss-of-signaling event. This ratio is NA for mutations that affect the central phosphorylation sites}
+\item{pwm}{Name of the kinase being rewiried}
+\item{prob}{Joint probability of wild type sequence belonging to the foreground distribution and mutated sequence belonging to the background distribution, for loss and vice versa for gain}
+\item{effect}{Type of rewiring event, can be "loss" or "gain"}
+\item{nseqs}{Number of sequences used to construct the PWM. PWMs constructed with a higher number of sequences are generally considered of better quality.}
+\item{pwm_fam}{Family/subfamily of kinase being rewired. If a kinase subfamily is available the family and subfamily will be seprated by an underscore e.g. "DMPK_ROCK". If no subfamily is available, only the family is shown e.g. "GSK"}
 }
 \description{
 This function takes in mutation, sequence and phosphorylation data to predict the

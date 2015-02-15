@@ -194,8 +194,7 @@ jQuery.fn.dataTableExt.oSort['num-html-desc'] = function(a,b) {
 				null, //Psite-seq
 				{ "sType" : "num-html" }, //WT-score
 				{ "sType" : "num-html" }, //MT-score
-				{ "sType" : "num-html" }, //WT-perc
-				{ "sType" : "num-html" }, //MT-perc
+				{ "sType" : "num-html" }, //Prob
 				{ "sType" : "num-html" }, //LogRatio
 				null, //Effect
 				null //PWM/logo

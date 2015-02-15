@@ -3,7 +3,7 @@
 \alias{PWM}
 \title{Construct position weight matrix}
 \usage{
-PWM(seqs, pseudocount = 0.001, relative.freq = T, type = "AA",
+PWM(seqs, pseudocount = 0.01, relative.freq = T, type = "AA",
   priors = AA_PRIORS_HUMAN, log.bg = F)
 }
 \arguments{

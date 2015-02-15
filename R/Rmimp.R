@@ -111,7 +111,7 @@ unfactor <- function(df){
 #' @export
 #' @examples
 #' # No examples
-PWM <- function(seqs, pseudocount=0.001, relative.freq=T, type='AA', priors=AA_PRIORS_HUMAN, log.bg=F){
+PWM <- function(seqs, pseudocount=0.01, relative.freq=T, type='AA', priors=AA_PRIORS_HUMAN, log.bg=F){
   
   
   # Ensure same length characters 
@@ -265,6 +265,12 @@ mss <- function(seqs, pwm, is.kinase.pwm=T, na.rm=F, ignore.ind=8){
     score.arr = scoreArray(seqs, pwm)
     scores = sapply(score.arr, function(sa){
       na = is.na(sa)
+      
+      # Replace NAs with worst sequence
+      sa[na] = wa[na]
+      # Set all to false
+      na = na & F
+      
       na[central.ind] = is.kinase.pwm
       
       # Get information content of non-NA values
@@ -452,18 +458,71 @@ pSNVs <- function(muts, psites, seqs, flank=7, multicore=F){
 }
 
 
+
+
+#' Compute liklihood using probability density function
+.probPoint = function(p, params) {
+  f = dnorm(p, mean = params$means, sd = params$sds, log=F) * params$wts
+  return(sum(f))
+}
+
+#' Computing posterior probability - ploss and pgain
+#' 
+#' @param wt.score Wild type score
+#' @param mt.score Mutant score
+#' @param dist.params Distribution parameters of GMMs (foreground and background). This is precomputed and comes built into mimp.
+#' @param auc AUC of the model. This is precomputed and comes built into mimp.
+#' @param show.likelihood If TRUE, individual liklihoods used to compute ploss and pgain is returned. Otherwise only ploss and pgain returned
+pRewiringPosterior <- function(wt.score, mt.score, dist.params, auc, show.likelihood=F){
+  fg.params = dist.params$fg.params
+  bg.params = dist.params$bg.params
+  
+  fg_prior = auc/(1+auc)
+  bg_prior = 1-fg_prior
+  
+  # Get probability of wt/mt in foreground
+  p.wt.fg = .probPoint(wt.score, fg.params) * fg_prior
+  p.mt.fg = .probPoint(mt.score, fg.params) * fg_prior
+  
+  # Get probability of wt/mt in background
+  p.wt.bg = .probPoint(wt.score, bg.params) * bg_prior
+  p.mt.bg = .probPoint(mt.score, bg.params) * bg_prior
+  
+  # Get posteriors 
+  post.wt.fg = (p.wt.fg) / (p.wt.bg + p.wt.fg)
+  post.mt.bg = (p.mt.bg) / (p.mt.bg + p.mt.fg)
+  
+  post.wt.bg = (p.wt.bg) / (p.wt.bg + p.wt.fg)
+  post.mt.fg = (p.mt.fg) / (p.mt.bg + p.mt.fg)
+  
+  # Get probabilities of loss and gain
+  ploss = post.wt.fg * post.mt.bg
+  pgain = post.wt.bg * post.mt.fg
+  
+  if(show.likelihood){
+    c(p.wt.fg=post.wt.fg, p.mt.fg=post.mt.fg, p.wt.bg=post.wt.bg, p.mt.bg=post.mt.bg, 
+      ploss=ploss, pgain=pgain)
+  }else{
+    c(ploss=ploss, pgain=pgain)
+  }
+}
+
+
+
+
 #' Score wt and mt sequences for a pwm
 #'
 #' @param pwm Position weight matrix of interest
 #' @param mut_ps psnvs data frame containing wt and mt sequences computed from pSNVs function
+#' @param params Mixture model parameters for foreground and background distributions. This is precomputed and comes built into mimp.
+#' @param auc The AUC of the kinase in question. This is precomputed and comes built into mimp.
 #' @param is.kinase.pwm TRUE if pwm is that of a kinase
-#' @param thresh.bg Anything below this threshold is considered a negative hit
-#' @param thresh.fg Anything above this threshold is considered a positive hit
-#' @param thresh.log2 Threshold for the absolute value of log ratio. Anything less than this value is discarded.
+#' @param prob.thresh Probability threshold of gains and losses. This value should be between 0.5 and 1.
+#' @param log2.thresh Threshold for the absolute value of log ratio between wild type and mutant scores. Anything less than this value is discarded (default: 1).
 #' @param include.cent If TRUE, gains and losses caused by mutation in the central STY residue are kept
 #' 
 #' @keywords mut psites score snp
-scoreWtMt <- function(pwm, mut_ps, is.kinase.pwm=T, thresh.bg=1, thresh.fg=0, thresh.log2=0, include.cent=F){
+scoreWtMt <- function(pwm, mut_ps, params, auc, is.kinase.pwm=T, prob.thresh=0.5, log2.thresh=1, include.cent=F){
   
   mut_ps$score_wt = mss(mut_ps$wt, pwm, is.kinase.pwm)
   mut_ps$score_mt = mss(mut_ps$mt, pwm, is.kinase.pwm)
@@ -471,20 +530,31 @@ scoreWtMt <- function(pwm, mut_ps, is.kinase.pwm=T, thresh.bg=1, thresh.fg=0, th
   
   mut_ps$pwm = ''
   
-  
   if(include.cent){
-    mut_ps$score_wt[is.na(mut_ps$score_wt)] = -1
-    mut_ps$score_mt[is.na(mut_ps$score_mt)] = -1
-  }else{
-    mut_ps = mut_ps[!is.na(mut_ps$score_wt) & !is.na(mut_ps$score_mt),]
+    mut_ps$score_wt[is.na(mut_ps$score_wt)] = 0
+    mut_ps$score_mt[is.na(mut_ps$score_mt)] = 0
   }
+  mut_ps = mut_ps[!is.na(mut_ps$score_wt) & !is.na(mut_ps$score_mt),]
   
-  a = mut_ps$score_wt > thresh.fg & mut_ps$score_mt < thresh.bg
-  b = mut_ps$score_mt > thresh.fg & mut_ps$score_wt < thresh.bg
-  
-  mut_ps = mut_ps[a|b,]
-  mut_ps = mut_ps[is.na(mut_ps$log_ratio) | abs(mut_ps$log_ratio) >= thresh.log2, ]
-  
+  if(nrow(mut_ps) > 0){
+    res = as.data.frame(t(sapply(1:nrow(mut_ps), function(i){
+      pRewiringPosterior(mut_ps$score_wt[i], mut_ps$score_mt[i], params, auc)
+    })))
+    
+    ind = res$ploss >= prob.thresh | res$pgain >= prob.thresh
+    mut_ps = cbind(mut_ps[ind,], res[ind,])
+    
+    mut_ps = mut_ps[is.na(mut_ps$log_ratio) | abs(mut_ps$log_ratio) >= log2.thresh, ]
+    
+    effect = rep('gain', nrow(mut_ps))
+    effect[mut_ps$ploss > prob.thresh] = 'loss'
+    mut_ps$prob = pmax(mut_ps$ploss, mut_ps$pgain)
+    mut_ps$effect = effect
+    mut_ps = mut_ps[,!names(mut_ps) %in% c('ploss', 'pgain')]
+  }else{
+    mut_ps$prob = mut_ps$effect = numeric(0)
+  }
+ 
   return(mut_ps)
 }
 
@@ -509,30 +579,27 @@ scoreWtMt <- function(pwm, mut_ps, is.kinase.pwm=T, thresh.bg=1, thresh.fg=0, th
 #'    CTNNB1 \tab 29\cr
 #'    CTNNB1 \tab 44\cr
 #' }
-#' @param perc.bg Percentile value between 0 - 100. This value is used to compute a threshold, beta from the negative (background) distribution of scores. 
-#'  By default this is the 90th percentile of the background distribution of scores. Anything below the threshold is considered a negative hit.
-#' @param perc.fg Percentile value between 0 - 100. This value is used to compute a threshold, alpha from the positive (foreground) distribution of scores. 
-#'  By default this is the 10th percentile of the foreground distribution of scores. Anything above the threshold is considered a positive hit.
-#' @param thresh.log2 Threshold for the absolute value of log ratio. Anything less than this value is discarded (default: 0).
-#' @param include.cent If TRUE, gains and losses caused by mutation in the central STY residue are kept. Scores of peptides with a non-STY central residue is given a score of -1 (default: FALSE).
-#' @param model.data Name of specifcity model data to use, can be "hconf" : individual experimental kinase specificity models used to scan for rewiring events. For experimental kinase specificity models, grouped by family, set to "hconf-fam". Both are considered high confidence. For lower confidence predicted specificity models , set to "lconf". NOTE: Predicted models are purely speculative and should be used with EXTREME CAUTION.
+#' @param prob.thresh Probability threshold of gains and losses. This value should be between 0.5 and 1.
+#' @param log2.thresh Threshold for the absolute value of log ratio between wild type and mutant scores. Anything less than this value is discarded (default: 1).
+#' @param include.cent If TRUE, gains and losses caused by mutation in the central STY residue are kept. Scores of peptides with a non-STY central residue is given a score of 0 (default: FALSE).
+#' @param model.data Name of specifcity model data to use, can be "hconf" : individual experimental kinase specificity models used to scan for rewiring events. For experimental kinase specificity models, grouped by family, set to "hconf-fam". Both are considered high confidence. For lower confidence predicted specificity models , set to "lconf". NOTE: Predicted models are purely speculative and should be used with caution
 #' 
 #' @return 
 #' The data is returned in a \code{data.frame} with the following columns:
-#' \item{gene}{gene with the rewiring event}
-#' \item{mut}{mutation causing the rewiring event}
-#' \item{psite_pos}{position of the central residue of the phosphosite}
-#' \item{mut_dist}{distance of the mutation from the central phosphosite}
-#' \item{wt}{sequence of the wildtype phosphosite (before the mutation) }
-#' \item{mt}{sequence of the mutated phosphosite (after the mutation)}
-#' \item{score_wt}{matrix similarity score of the wildtype phosphosite }
-#' \item{score_mt}{matrix similarity score of the mutated phosphosite }
-#' \item{log_ratio}{Log2 ratio between mutant and wildtype scores. A high positive log ratio represents a high confidence gain-of-signaling event. A high negative log ratio represents a high confidence loss-of-signaling event.}
-#' \item{pwm}{name of the kinase being rewiried}
-#' \item{nseqs}{number of sequences used to construct the PWM. PWMs constructed with a higher number of sequences are generally considered of better quality.}
-#' \item{pwm_fam}{family/subfamily of kinase being rewired. If a kinase subfamily is available the family and subfamily will be seprated by an underscore e.g. "DMPK_ROCK". If no subfamily is available, only the family is shown e.g. "GSK"}
-#' \item{perc_wt}{Percentile rank of the wt score}
-#' \item{perc_mt}{Percentile rank of the mutant score}
+#' \item{gene}{Gene with the rewiring event}
+#' \item{mut}{Mutation causing the rewiring event}
+#' \item{psite_pos}{Position of the central residue of the phosphosite}
+#' \item{mut_dist}{Distance of the mutation relative to the central phosphosite}
+#' \item{wt}{Sequence of the wildtype phosphosite (before the mutation) }
+#' \item{mt}{Sequence of the mutated phosphosite (after the mutation)}
+#' \item{score_wt}{Matrix similarity score of the wildtype phosphosite }
+#' \item{score_mt}{Matrix similarity score of the mutated phosphosite }
+#' \item{log_ratio}{Log2 ratio between mutant and wildtype scores. A high positive log ratio represents a high confidence gain-of-signaling event. A high negative log ratio represents a high confidence loss-of-signaling event. This ratio is NA for mutations that affect the central phosphorylation sites}
+#' \item{pwm}{Name of the kinase being rewiried}
+#' \item{prob}{Joint probability of wild type sequence belonging to the foreground distribution and mutated sequence belonging to the background distribution, for loss and vice versa for gain}
+#' \item{effect}{Type of rewiring event, can be "loss" or "gain"}
+#' \item{nseqs}{Number of sequences used to construct the PWM. PWMs constructed with a higher number of sequences are generally considered of better quality.}
+#' \item{pwm_fam}{Family/subfamily of kinase being rewired. If a kinase subfamily is available the family and subfamily will be seprated by an underscore e.g. "DMPK_ROCK". If no subfamily is available, only the family is shown e.g. "GSK"}
 #' 
 #' 
 #' @keywords mimp psites mutation snp snv pwm rewiring phosphorylation kinase
@@ -553,15 +620,14 @@ scoreWtMt <- function(pwm, mut_ps, is.kinase.pwm=T, thresh.bg=1, thresh.fg=0, th
 #' 
 #' # Show head of results
 #' head(results)
-mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, display.results=T, include.cent=F, model.data='hconf'){
+mimp <- function(muts, seqs, psites, prob.thresh=0.5, log2.thresh=1, display.results=T, include.cent=F, model.data='hconf'){
+
+  
   flank=7
   MUT_REGEX = '^[A-Z]\\d+[A-Z]$'
   DIG_REGEX = '^\\d+$'
   
-  perc.bg = as.integer(perc.bg)
-  perc.fg = as.integer(perc.fg)
-  if(!is.numeric(perc.bg) | perc.bg > 100 | perc.bg < 0) stop('perc.bg must be an integer between 0-100')
-  if(!is.numeric(perc.fg) | perc.fg > 100 | perc.fg < 0) stop('perc.fg must be an integer between 0-100')
+  if(!is.numeric(prob.thresh) | prob.thresh > 1 | prob.thresh < 0) stop('Probability threshold "prob.thresh" must be between 0.5 and 1')
   
   z = c('hconf', 'hconf-fam', 'lconf')
   if(length(model.data) != 1 | !is.character(model.data)) stop('model.data must be a character of length one')
@@ -619,15 +685,16 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
   # 3. Validate p-site data
   # Ensure numerical values in p-site position data
   if(!(all(grepl(DIG_REGEX, pd$pos) ))) 
-    stop('All positions of p-sites must be non-negative and non-zero!')
+    stop('All positions of psites must be non-negative and non-zero!')
   
   # Ensure gene in p-site data is matched to fasta file, if not ignore these rows
   z = setdiff(pd$gene, names(seqdata))
   if(length(z) > 0){
-    warning(sprintf('%s genes found in p-site data could not be matched to headers of the fasta file and will be ignored. Genes: %s', 
+    warning(sprintf('%s genes found in psite data could not be matched to headers of the fasta file and will be ignored. Genes: %s', 
                     length(z), paste0(z, collapse=', ')))
     pd = pd[!pd$gene %in% z,]
   }
+  
   md = md[md$gene %in% pd$gene,]
   seqdata = seqdata[names(seqdata) %in% pd$gene]
   
@@ -655,7 +722,7 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
     wrongPsiteHead = head(wrongPsite)
     wr = head(pd[wrongPsite,])
     wr = sprintf('%s: expected STY at %s found %s', wr$gene, wr$pos, psiteAA[wrongPsiteHead])
-    warning(sprintf('There are %s p-site(s) that do not correspond to an S, T or Y. These will be ignored:\n%s%s', 
+    warning(sprintf('There are %s psite(s) that do not correspond to an S, T or Y. These will be ignored:\n%s%s', 
                     sum(wrongPsiteHead), paste(wr, collapse='\n'), 
                     ifelse(sum(wrongPsiteHead) > 6, '\n...', '') ))
   }
@@ -673,43 +740,24 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
   mdata = readRDS( file.path(BASE_DIR, data.file))
   pwms = mdata$pwms
   nseqs = mdata$nseqs
-  perc = mdata$perc
-  cutoffs = mdata$cutoffs
+  params = mdata$params
+  aucs = mdata$aucs
   
   writeLines('Predicting kinase rewiring events ...')
   pb <- txtProgressBar(min = 0, max = length(pwms), style = 3)
   
-  ct = t(sapply(names(pwms), function(name){
-    c_bg = cutoffs[[name]]$bg[perc.bg+1]
-    c_fg = cutoffs[[name]]$fg[perc.fg+1]
-    c(c_bg, c_fg)
-  }))
-  
-  
-  ct = as.data.frame(ct, stringsAsFactors=F)
-  ct$pwm = names(pwms)
-  colnames(ct) = c('bg', 'fg', 'pwm')
-  
-  # If beta is greater than alpha, CAP it at the alpha value.
-  ind = ct$bg > ct$fg
-  ct$bg[ind] = ct$fg[ind]
-  
-  # Use only cases where bg cutoff is less than fg
-#   keep = ct[ct$bg < ct$fg, 'pwm']
-#   pwms = pwms[keep]
-#   
-#   if(length(pwms) == 0){
-#     warning('No PWMs available for given alpha and beta cutoffs!')
-#     return(NULL)
-#   }
   
   scored = lapply(1:length(pwms), function(i){
+    # Processing PWM i
     setTxtProgressBar(pb, i)
+    
+    # Get PWM and name
     pwm = pwms[[i]]
     name = names(pwms)[i]
-    thresh.bg = cutoffs[[name]]$bg[perc.bg+1]
-    thresh.fg = cutoffs[[name]]$fg[perc.fg+1]
-    ss = scoreWtMt(pwm, mut_psites, T, thresh.bg, thresh.fg, thresh.log2, include.cent)
+    cur.params = params[[name]]
+    cur.auc = aucs[[name]]
+    # Score
+    ss = scoreWtMt(pwm, mut_psites, cur.params, cur.auc, is.kinase.pwm = T, prob.thresh, log2.thresh, include.cent)
     
     if(nrow(ss)>0){
       ss$pwm = name
@@ -722,9 +770,7 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
   
   z = scored
   scored = scored[sapply(scored, function(x) nrow(x) > 0)]
-  if(length(scored) == 0){
-    return(z[[1]])
-  }
+  if(length(scored) == 0) return(z[[1]])
   
   
   # Merge all data frames
@@ -739,35 +785,13 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
     s$pwm_fam[ind] = kin2fam[tpwm[ind]]
   }
   
-  s$effect = 'Gain'
-  s$effect[s$score_wt > s$score_mt] = 'Loss'
   
-  # Percentile rank
-  pfg = unlist( perc$fg[s$pwm] )
-  pbg = unlist( perc$bg[s$pwm] )
+#   s$effect = 'gain'
+#   s$effect[s$ploss > prob.thresh] = 'loss'
   
   
-  r = sapply(1:nrow(s), function(i){
-    e = s$effect[i]
-    fg = pfg[[i]]
-    bg = pbg[[i]]
-    wt = s$score_wt[i]
-    mt = s$score_mt[i]
-    if(e == "Loss"){
-      c( fg(wt), bg(mt))
-    }else{
-      c( bg(wt), fg(mt))
-    }
-  })
-  r = as.data.frame(t(r))
-  names(r) = c('perc_wt', 'perc_mt')
-  s$perc_wt = r$perc_wt
-  s$perc_mt = r$perc_mt
-  
-  s = s[order(s$log_ratio, decreasing=T),]
+  s = s[order(s$prob, decreasing=T),]
   attr(s, 'model.data') = model.data
-  
-  
   
   if(display.results) results2html(s)
   
@@ -776,7 +800,6 @@ mimp <- function(muts, seqs, psites, perc.bg=90, perc.fg=10, thresh.log2=0, disp
   
   
   s = s[,!names(s) %in% c('ref_aa', 'alt_aa', 'mut_pos')]
-  attr(s, 'cutoffs') = ct
   attr(s, 'model.data') = model.data
   return(s)
 }
@@ -809,8 +832,7 @@ dohtml <- function(x, LOGO_DIR, HL_DIR){
   x$score_wt = signif(x$score_wt, 3)
   x$score_mt = signif(x$score_mt, 3)
   x$log_ratio = signif(x$log_ratio, 3)
-  x$perc_wt = signif(x$perc_wt, 3)
-  x$perc_mt = signif(x$perc_mt, 3)
+  x$prob = signif(x$prob, 3)
   
   
   x$log_ratio[is.na(x$log_ratio)] = '-'
@@ -818,15 +840,16 @@ dohtml <- function(x, LOGO_DIR, HL_DIR){
   #x$pwm = gsub('-', '_', x$pwm)
   
   cnt = as.list( table(x$effect) )
-  n_gain = ifelse( is.null( cnt[['Gain']] ), 0, cnt[['Gain']])
-  n_loss = ifelse( is.null( cnt[['Loss']] ), 0, cnt[['Loss']])
+  n_gain = ifelse( is.null( cnt[['gain']] ), 0, cnt[['gain']])
+  n_loss = ifelse( is.null( cnt[['loss']] ), 0, cnt[['loss']])
   n_mut = nrow(unique(x[,c('gene', 'mut')]))
+  
   lines = sapply(1:nrow(x), function(i){
     r = x[i,]
     d = r$mut_dist
     seq = sprintf('%s<br>%s', .htmlSeq(r$wt, d), .htmlSeq(r$mt, d))
     scr = sprintf('%s<br>%s', r$score_wt, r$score_mt)
-    prc = sprintf('%s<br>%s', r$perc_wt, r$perc_mt)
+    
     logo = file.path(LOGO_DIR, paste0(r$pwm, '.svg'))
     hl = file.path(HL_DIR, paste0(r$mut_dist, '.svg'))
     t = sprintf('<a class="hide name">%s</a>
@@ -834,7 +857,7 @@ dohtml <- function(x, LOGO_DIR, HL_DIR){
                 src="%s" class="logo" alt="%s" />', 
                 r$pwm, normalizePath(hl),  normalizePath(logo), r$pwm)
     
-    if(r$effect == 'Loss'){
+    if(r$effect == 'loss'){
       eff = '<a class="loss">Loss</a>'
     }else{
       eff = '<a class="gain">Gain</a>'
@@ -850,18 +873,16 @@ dohtml <- function(x, LOGO_DIR, HL_DIR){
             <td class="sequence">%s</td>
             <td class="wt-score">%s</td>
             <td class="mt-score">%s</td>
-            <td class="wt-perc">%s</td>
-            <td class="mt-perc">%s</td>
+            <td class="prob">%s</td>
             <td class="log-ratio">%s</td>
             <td class="effect">%s</td>
             <td class="seq-logo">%s</td>
             </tr>', 
-            r$gene, r$psite_pos, r$mut, r$mut_dist, seq, r$score_wt, r$score_mt, r$perc_wt, r$perc_mt, r$log_ratio, eff, t)
+            r$gene, r$psite_pos, r$mut, r$mut_dist, seq, r$score_wt, r$score_mt, r$prob, r$log_ratio, eff, t)
     
   })
   
   tt = '<div id="%s" style="display:none">%s</div>'
-  
   lines = append(lines,
                  c(sprintf(fmt=tt, 'n_mut', n_mut),
                    sprintf(fmt=tt, 'n_gain', n_gain),
