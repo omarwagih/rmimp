@@ -144,8 +144,8 @@ PWM <- function(seqs, pseudocount=0.01, relative.freq=T, type='AA', priors=AA_PR
     col[is.na(col)] = 0
     names(col) = namespace
     
-    # Do pseudocounts
-    col = col + (sqrt(length(seqs))/20)#(pseudocount * bg.prob) 
+    # Do pseudocounts if were logging
+    if(log.bg) col = col + bg.prob
     
     # Do relative frequencies
     if(relative.freq) col = col / sum(col)
@@ -184,6 +184,7 @@ PWM <- function(seqs, pseudocount=0.01, relative.freq=T, type='AA', priors=AA_PR
 #' @param pwm Position weight matrix
 #'  
 #' @keywords pwm mss match tfbs
+#' @export
 #' @examples
 #' # No Examples
 scoreArray <- function(seqs, pwm){
@@ -236,6 +237,7 @@ logscore <- function(seqs, pwm, na.rm=F, ignore.ind=8){
 #' @param na.rm Remove NA scores?
 #'  
 #' @keywords pwm mss match tfbs
+#' @export
 #' @examples
 #' # No Examples
 mss <- function(seqs, pwm, is.kinase.pwm=T, na.rm=F, ignore.ind=8){
