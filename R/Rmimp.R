@@ -1,10 +1,10 @@
 BASE_DIR = system.file("extdata", "", package = "rmimp")
 
-# if(T){
-#   BASE_DIR = '~/Development/mimp/inst/extdata/'
-#   writeLines('Warning: remove base dir')
-# }
-# 
+if(T){
+  BASE_DIR = '~/Development/mimp/inst/extdata/'
+  writeLines('Warning: remove base dir')
+}
+
 
 AA = c('A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V')
 DNA = c('A', 'T', 'G', 'C')
@@ -537,7 +537,7 @@ scoreWtMt <- function(pwm, mut_ps, params, auc, is.kinase.pwm=T, prob.thresh=0.5
     mut_ps$score_wt[is.cent & is.na(mut_ps$score_wt)] = 0
     mut_ps$score_mt[is.cent & is.na(mut_ps$score_mt)] = 0
   }
-  mut_ps = mut_ps[!is.na(mut_ps$score_wt) | !is.na(mut_ps$score_mt),]
+  mut_ps = mut_ps[!is.na(mut_ps$score_wt) & !is.na(mut_ps$score_mt),]
   
   if(nrow(mut_ps) > 0){
     res = as.data.frame(t(sapply(1:nrow(mut_ps), function(i){
