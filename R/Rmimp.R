@@ -4,7 +4,7 @@ BASE_DIR = system.file("extdata", "", package = "rmimp")
 #   BASE_DIR = '~/Development/mimp/inst/extdata/'
 #   writeLines('Warning: remove base dir')
 # }
-
+# 
 
 AA = c('A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V')
 DNA = c('A', 'T', 'G', 'C')
@@ -533,10 +533,11 @@ scoreWtMt <- function(pwm, mut_ps, params, auc, is.kinase.pwm=T, prob.thresh=0.5
   mut_ps$pwm = ''
   
   if(include.cent){
-    mut_ps$score_wt[is.na(mut_ps$score_wt)] = 0
-    mut_ps$score_mt[is.na(mut_ps$score_mt)] = 0
+    is.cent = mut_ps$mut_dist == 0
+    mut_ps$score_wt[is.cent & is.na(mut_ps$score_wt)] = 0
+    mut_ps$score_mt[is.cent & is.na(mut_ps$score_mt)] = 0
   }
-  mut_ps = mut_ps[!is.na(mut_ps$score_wt) & !is.na(mut_ps$score_mt),]
+  mut_ps = mut_ps[!is.na(mut_ps$score_wt) | !is.na(mut_ps$score_mt),]
   
   if(nrow(mut_ps) > 0){
     res = as.data.frame(t(sapply(1:nrow(mut_ps), function(i){
@@ -633,7 +634,9 @@ mimp <- function(muts, seqs, psites, prob.thresh=0.5, log2.thresh=1, display.res
   
   z = c('hconf', 'hconf-fam', 'lconf')
   if(length(model.data) != 1 | !is.character(model.data)) stop('model.data must be a character of length one')
-  if(!model.data %in% z) stop('model.data must be one of the following: "hconf", "hconf-fam", or "lconf"')
+  
+  custom.models = grepl('.rds$', model.data)
+  if(!model.data %in% z & !custom.models) stop('model.data must be one of the following: "hconf", "hconf-fam", or "lconf"')
   
   # 1. Read sequence data
   writeLines('Reading fasta data from file ...')
@@ -737,9 +740,17 @@ mimp <- function(muts, seqs, psites, prob.thresh=0.5, log2.thresh=1, display.res
   
   writeLines('Loading kinase specificity models and cutoffs ...')
   mdata = c('hconf'='mimp_data.rds', 'hconf-fam'='mimp_data_fam.rds', 'lconf'='mimp_data_newman.rds')
-  data.file = mdata[model.data]
   
-  mdata = readRDS( file.path(BASE_DIR, data.file))
+  if(custom.models){
+    writeLines('Reading custom mimp models ...')
+    data.file = model.data
+    model.data = 'custom'
+    mdata = readRDS(data.file)
+  }else{
+    data.file = mdata[model.data]
+    mdata = readRDS( file.path(BASE_DIR, data.file))
+  }
+  
   pwms = mdata$pwms
   nseqs = mdata$nseqs
   params = mdata$params
