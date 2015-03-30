@@ -1,9 +1,9 @@
 BASE_DIR = system.file("extdata", "", package = "rmimp")
 
-if(T){
-  BASE_DIR = '~/Development/mimp/inst/extdata/'
-  writeLines('Warning: remove base dir')
-}
+# if(T){
+#   BASE_DIR = '~/Development/mimp/inst/extdata/'
+#   writeLines('Warning: remove base dir')
+# }
 
 
 AA = c('A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V')
