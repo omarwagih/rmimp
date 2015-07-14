@@ -1,0 +1,232 @@
+
+R version 3.1.2 (2014-10-31) -- "Pumpkin Helmet"
+Copyright (C) 2014 The R Foundation for Statistical Computing
+Platform: x86_64-apple-darwin13.4.0 (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "rmimp"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> base::assign(".ExTimings", "rmimp-Ex.timings", pos = 'CheckExEnv')
+> base::cat("name\tuser\tsystem\telapsed\n", file=base::get(".ExTimings", pos = 'CheckExEnv'))
+> base::assign(".format_ptime",
++ function(x) {
++   if(!is.na(x[4L])) x[1L] <- x[1L] + x[4L]
++   if(!is.na(x[5L])) x[2L] <- x[2L] + x[5L]
++   options(OutDec = '.')
++   format(x[1L:3L], digits = 7L)
++ },
++ pos = 'CheckExEnv')
+> 
+> ### * </HEADER>
+> library('rmimp')
+MIMP v1.1 (2015)
+Type '?mimp' for help or see the documentation 'help(package=rmimp)' for more details
+
+If you use MIMP in your research, please cite:
+Wagih O, Reimand J, Bader GD (2015). MIMP: predicting the impact of mutations on kinase-substrate phosphorylation. Nat. Methods 12(6):531-3. doi:10.1038/nmeth.3396
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("PWM")
+> ### * PWM
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: PWM
+> ### Title: Construct position weight matrix
+> ### Aliases: PWM
+> ### Keywords: construct pwm
+> 
+> ### ** Examples
+> 
+> # No examples
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("PWM", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("bestSequence")
+> ### * bestSequence
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: bestSequence
+> ### Title: Given a position weight matrix, find the best matching sequence
+> ### Aliases: bestSequence
+> ### Keywords: best pwm
+> 
+> ### ** Examples
+> 
+> # No Examples
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("bestSequence", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("flankingSequence")
+> ### * flankingSequence
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: flankingSequence
+> ### Title: Get flanking sequences of a position.
+> ### Aliases: flankingSequence
+> ### Keywords: flank sequence
+> 
+> ### ** Examples
+> 
+> # One sequence and one index. Central character is 'B'
+> flankingSequence(seqs='ABC', inds=2, flank=1)
+  ABC 
+"ABC" 
+> # An example showing the use of empty.char
+> flankingSequence(seqs='ABC', inds=2, flank=5)
+          ABC 
+"----ABC----" 
+> # An example with multiple sequences and indices
+> flankingSequence(seqs=c('ABC', 'XYZ'), inds=c(2, 1), flank=1)
+  ABC   XYZ 
+"ABC" "-XY" 
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("flankingSequence", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("mimp")
+> ### * mimp
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: mimp
+> ### Title: Predict the impact of single variants on phosphorylation.
+> ### Aliases: mimp
+> ### Keywords: kinase mimp mutation phosphorylation psites pwm rewiring snp
+> ###   snv
+> 
+> ### ** Examples
+> 
+> # Get the path to example mutation data
+> mut.file = system.file("extdata", "mutation_data.txt", package = "rmimp")
+> 
+> # Get the path to example FASTA sequence data
+> seq.file = system.file("extdata", "sequence_data.txt", package = "rmimp")
+> 
+> # View the files in a text editor
+> browseURL(mut.file)
+> browseURL(seq.file)
+> 
+> # Run rewiring analysis
+> results = mimp(mut.file, seq.file, display.results=TRUE)
+.... | reading fasta file from /Users/omarwagih/Development/mimp/build/rmimp.Rcheck/rmimp/extdata/sequence_data.txtdone
+.... | reading mutation data file from /Users/omarwagih/Development/mimp/build/rmimp.Rcheck/rmimp/extdata/mutation_data.txtdone
+.... | no phosphorylation data found, generating potential phosphosites using all STY residuesdone
+.... | loading specificity modelsdone
+  1% | predicting kinase rewiring events  2% | predicting kinase rewiring events  2% | predicting kinase rewiring events  3% | predicting kinase rewiring events  4% | predicting kinase rewiring events  5% | predicting kinase rewiring events  6% | predicting kinase rewiring events  6% | predicting kinase rewiring events  7% | predicting kinase rewiring events  8% | predicting kinase rewiring events  9% | predicting kinase rewiring events 10% | predicting kinase rewiring events 10% | predicting kinase rewiring events 11% | predicting kinase rewiring events 12% | predicting kinase rewiring events 13% | predicting kinase rewiring events 14% | predicting kinase rewiring events 14% | predicting kinase rewiring events 15% | predicting kinase rewiring events 16% | predicting kinase rewiring events 17% | predicting kinase rewiring events 18% | predicting kinase rewiring events 18% | predicting kinase rewiring events 19% | predicting kinase rewiring events 20% | predicting kinase rewiring events 21% | predicting kinase rewiring events 22% | predicting kinase rewiring events 22% | predicting kinase rewiring events 23% | predicting kinase rewiring events 24% | predicting kinase rewiring events 25% | predicting kinase rewiring events 26% | predicting kinase rewiring events 26% | predicting kinase rewiring events 27% | predicting kinase rewiring events 28% | predicting kinase rewiring events 29% | predicting kinase rewiring events 30% | predicting kinase rewiring events 30% | predicting kinase rewiring events 31% | predicting kinase rewiring events 32% | predicting kinase rewiring events 33% | predicting kinase rewiring events 34% | predicting kinase rewiring events 34% | predicting kinase rewiring events 35% | predicting kinase rewiring events 36% | predicting kinase rewiring events 37% | predicting kinase rewiring events 38% | predicting kinase rewiring events 38% | predicting kinase rewiring events 39% | predicting kinase rewiring events 40% | predicting kinase rewiring events 41% | predicting kinase rewiring events 42% | predicting kinase rewiring events 42% | predicting kinase rewiring events 43% | predicting kinase rewiring events 44% | predicting kinase rewiring events 45% | predicting kinase rewiring events 46% | predicting kinase rewiring events 46% | predicting kinase rewiring events 47% | predicting kinase rewiring events 48% | predicting kinase rewiring events 49% | predicting kinase rewiring events 50% | predicting kinase rewiring events 50% | predicting kinase rewiring events 51% | predicting kinase rewiring events 52% | predicting kinase rewiring events 53% | predicting kinase rewiring events 54% | predicting kinase rewiring events 54% | predicting kinase rewiring events 55% | predicting kinase rewiring events 56% | predicting kinase rewiring events 57% | predicting kinase rewiring events 58% | predicting kinase rewiring events 58% | predicting kinase rewiring events 59% | predicting kinase rewiring events 60% | predicting kinase rewiring events 61% | predicting kinase rewiring events 62% | predicting kinase rewiring events 62% | predicting kinase rewiring events 63% | predicting kinase rewiring events 64% | predicting kinase rewiring events 65% | predicting kinase rewiring events 66% | predicting kinase rewiring events 66% | predicting kinase rewiring events 67% | predicting kinase rewiring events 68% | predicting kinase rewiring events 69% | predicting kinase rewiring events 70% | predicting kinase rewiring events 70% | predicting kinase rewiring events 71% | predicting kinase rewiring events 72% | predicting kinase rewiring events 73% | predicting kinase rewiring events 74% | predicting kinase rewiring events 74% | predicting kinase rewiring events 75% | predicting kinase rewiring events 76% | predicting kinase rewiring events 77% | predicting kinase rewiring events 78% | predicting kinase rewiring events 78% | predicting kinase rewiring events 79% | predicting kinase rewiring events 80% | predicting kinase rewiring events 81% | predicting kinase rewiring events 82% | predicting kinase rewiring events 82% | predicting kinase rewiring events 83% | predicting kinase rewiring events 84% | predicting kinase rewiring events 85% | predicting kinase rewiring events 86% | predicting kinase rewiring events 86% | predicting kinase rewiring events 87% | predicting kinase rewiring events 88% | predicting kinase rewiring events 89% | predicting kinase rewiring events 90% | predicting kinase rewiring events 90% | predicting kinase rewiring events 91% | predicting kinase rewiring events 92% | predicting kinase rewiring events 93% | predicting kinase rewiring events 94% | predicting kinase rewiring events 94% | predicting kinase rewiring events 95% | predicting kinase rewiring events 96% | predicting kinase rewiring events 97% | predicting kinase rewiring events 98% | predicting kinase rewiring events 98% | predicting kinase rewiring events 99% | predicting kinase rewiring events100% | predicting kinase rewiring eventsdone
+done | analysis complete with a total of 7 predicted rewiring events
+> 
+> # Show head of results
+> head(results)
+    gene   mut psite_pos mut_dist              wt              mt  score_wt
+1   TP53 R282W       284       -2 CPGRDRRTEEENLRK CPGRDWRTEEENLRK 0.8638365
+7   TP53 R282W       284       -2 CPGRDRRTEEENLRK CPGRDWRTEEENLRK 0.4810614
+4   TP53 R282W       284       -2 CPGRDRRTEEENLRK CPGRDWRTEEENLRK 0.4399870
+5   TP53 R282W       284       -2 CPGRDRRTEEENLRK CPGRDWRTEEENLRK 0.4591419
+3 CTNNB1  S37F        33        4 QQQSYLDSGIHSGAT QQQSYLDSGIHFGAT 0.4489178
+2 CTNNB1  S37F        40       -3 SGIHSGATTTAPSLS SGIHFGATTTAPSLS 0.7140822
+    score_mt log_ratio    pwm   pwm_fam nseqs      prob effect
+1 0.06228932 -3.793702  AURKB       Aur   106 0.8926760   loss
+7 0.11245692 -2.096849  ROCK1 DMPK_ROCK    45 0.8735273   loss
+4 0.02346718 -4.228745 PRKACA       PKA   399 0.8685414   loss
+5 0.12296231 -1.900724  PRKCD PKC_Delta    77 0.8463946   loss
+3 0.17808699 -1.333869  GSK3B       GSK   156 0.6416793   loss
+2 0.13888748 -2.362174 CSNK1D CK1_CK1-D    22 0.6390976   loss
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("mimp", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("mss")
+> ### * mss
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: mss
+> ### Title: Compute matrix similarity score as described in MATCH algorithm
+> ### Aliases: mss
+> ### Keywords: match mss pwm tfbs
+> 
+> ### ** Examples
+> 
+> # No Examples
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("mss", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("pSNVs")
+> ### * pSNVs
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: pSNVs
+> ### Title: Find phosphorylation related variants (pSNVs)
+> ### Aliases: pSNVs
+> ### Keywords: mutation psites psnv snp
+> 
+> ### ** Examples
+> 
+> # No examples
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("pSNVs", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("predictKinasePhosphosites")
+> ### * predictKinasePhosphosites
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: predictKinasePhosphosites
+> ### Title: Compute posterior probability of wild type phosphosites for
+> ###   kinases
+> ### Aliases: predictKinasePhosphosites
+> 
+> ### ** Examples
+> 
+> # Get the path to example phosphorylation data
+> psites.file = system.file("extdata", "ps_data.txt", package = "rmimp")
+> 
+> # Get the path to example FASTA sequence data
+> seq.file = system.file("extdata", "sequence_data.txt", package = "rmimp")
+> 
+> # Run for all kinases
+> results_all = scoreWtOnly(psites.file, seq.file)
+Error: could not find function "scoreWtOnly"
+Execution halted

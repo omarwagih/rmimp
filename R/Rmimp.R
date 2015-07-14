@@ -417,10 +417,10 @@ mimp <- function(muts, seqs, psites=NULL, prob.thresh=0.5, log2.thresh=1, displa
 #' seq.file = system.file("extdata", "sequence_data.txt", package = "rmimp")
 #' 
 #' # Run for all kinases
-#' results_all = scoreWtOnly(psites.file, seq.file)
+#' results_all = predictKinasePhosphosites(psites.file, seq.file)
 #' 
 #' # Run for select kinases
-#' results_select = scoreWtOnly(psites.file, seq.file, kinases=c("AURKB", "CDK2"))
+#' results_select = predictKinasePhosphosites(psites.file, seq.file, kinases=c("AURKB", "CDK2"))
 predictKinasePhosphosites <- function(psites, seqs, model.data='hconf', posterior_thresh=0.8, intermediate=F, kinases){
   flank = 7
   # Read data

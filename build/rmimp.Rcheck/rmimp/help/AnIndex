@@ -1,0 +1,15 @@
+bestSequence	bestSequence
+computeRewiring	computeRewiring
+degeneratePWM	degeneratePWM
+dohtml	dohtml
+flankingSequence	flankingSequence
+mimp	mimp
+mss	mss
+predictKinasePhosphosites	predictKinasePhosphosites
+pRewiringPosterior	pRewiringPosterior
+pSNVs	pSNVs
+PWM	PWM
+results2html	results2html
+scoreArray	scoreArray
+unfactor	unfactor
+worstSequence	worstSequence

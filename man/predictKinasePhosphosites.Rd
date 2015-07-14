@@ -46,9 +46,9 @@ psites.file = system.file("extdata", "ps_data.txt", package = "rmimp")
 seq.file = system.file("extdata", "sequence_data.txt", package = "rmimp")
 
 # Run for all kinases
-results_all = scoreWtOnly(psites.file, seq.file)
+results_all = predictKinasePhosphosites(psites.file, seq.file)
 
 # Run for select kinases
-results_select = scoreWtOnly(psites.file, seq.file, kinases=c("AURKB", "CDK2"))
+results_select = predictKinasePhosphosites(psites.file, seq.file, kinases=c("AURKB", "CDK2"))
 }
 

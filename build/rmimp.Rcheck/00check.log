@@ -1,0 +1,110 @@
+* using log directory ‘/Users/omarwagih/Development/mimp/build/rmimp.Rcheck’
+* using R version 3.1.2 (2014-10-31)
+* using platform: x86_64-apple-darwin13.4.0 (64-bit)
+* using session charset: UTF-8
+* checking for file ‘rmimp/DESCRIPTION’ ... OK
+* checking extension type ... Package
+* this is package ‘rmimp’ version ‘1.1’
+* checking CRAN incoming feasibility ... NOTE
+Maintainer: ‘Omar Wagih <wagih@ebi.ac.uk>’
+New submission
+* checking package namespace information ... OK
+* checking package dependencies ... NOTE
+  No repository set, so cyclic dependency check skipped
+* checking if this is a source package ... OK
+* checking if there is a namespace ... OK
+* checking for executable files ... OK
+* checking for hidden files and directories ... NOTE
+Found the following hidden files and directories:
+  ..pdf
+These were most likely included in error. See section ‘Package
+structure’ in the ‘Writing R Extensions’ manual.
+
+CRAN-pack does not know about
+  ..pdf
+* checking for portable file names ... OK
+* checking for sufficient/correct file permissions ... OK
+* checking whether package ‘rmimp’ can be installed ... OK
+* checking installed package size ... NOTE
+  installed size is 73.4Mb
+  sub-directories of 1Mb or more:
+    extdata  73.3Mb
+* checking package directory ... OK
+* checking DESCRIPTION meta-information ... OK
+* checking top-level files ... OK
+* checking for left-over files ... OK
+* checking index information ... OK
+* checking package subdirectories ... OK
+* checking R files for non-ASCII characters ... OK
+* checking R files for syntax errors ... OK
+* checking whether the package can be loaded ... OK
+* checking whether the package can be loaded with stated dependencies ... OK
+* checking whether the package can be unloaded cleanly ... OK
+* checking whether the namespace can be loaded with stated dependencies ... OK
+* checking whether the namespace can be unloaded cleanly ... OK
+* checking dependencies in R code ... OK
+* checking S3 generic/method consistency ... OK
+* checking replacement functions ... OK
+* checking foreign function calls ... OK
+* checking R code for possible problems ... NOTE
+.read.fasta: no visible binding for global variable ‘s2c’
+.read.fasta: no visible global function definition for ‘words’
+.read.fasta : readOneBFARecord: no visible global function definition
+  for ‘c2s’
+.read.fasta: no visible global function definition for ‘c2s’
+pSNVs: no visible binding for global variable ‘mut_pos’
+* checking Rd files ... OK
+* checking Rd metadata ... OK
+* checking Rd line widths ... OK
+* checking Rd cross-references ... OK
+* checking for missing documentation entries ... OK
+* checking for code/documentation mismatches ... OK
+* checking Rd \usage sections ... WARNING
+Undocumented arguments in documentation object 'computeRewiring'
+  ‘degenerate.pwms’ ‘.degenerate.groups’
+
+Undocumented arguments in documentation object 'dohtml'
+  ‘HL_DIR’
+
+Undocumented arguments in documentation object 'mimp'
+  ‘display.results’
+
+Undocumented arguments in documentation object 'pSNVs'
+  ‘md’ ‘pd’ ‘seqdata’
+Documented arguments not in \usage in documentation object 'pSNVs':
+  ‘muts’ ‘psites’ ‘seqs’
+
+Undocumented arguments in documentation object 'unfactor'
+  ‘df’
+Documented arguments not in \usage in documentation object 'unfactor':
+  ‘string’
+
+Functions with \usage entries need to have the appropriate \alias
+entries, and all their arguments documented.
+The \usage entries must correspond to syntactically valid R code.
+See the chapter ‘Writing R documentation files’ in the ‘Writing R
+Extensions’ manual.
+* checking Rd contents ... OK
+* checking for unstated dependencies in examples ... OK
+* checking examples ... ERROR
+Running examples in ‘rmimp-Ex.R’ failed
+The error most likely occurred in:
+
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: predictKinasePhosphosites
+> ### Title: Compute posterior probability of wild type phosphosites for
+> ###   kinases
+> ### Aliases: predictKinasePhosphosites
+> 
+> ### ** Examples
+> 
+> # Get the path to example phosphorylation data
+> psites.file = system.file("extdata", "ps_data.txt", package = "rmimp")
+> 
+> # Get the path to example FASTA sequence data
+> seq.file = system.file("extdata", "sequence_data.txt", package = "rmimp")
+> 
+> # Run for all kinases
+> results_all = scoreWtOnly(psites.file, seq.file)
+Error: could not find function "scoreWtOnly"
+Execution halted
