@@ -32,6 +32,8 @@ The data is returned in a \code{data.frame} with the following columns:
 \item{post.wt.bg}{posterior probability of score in background distribution}
 \item{pwm}{Name of the predicted kinase}
 \item{pwm_fam}{Family/subfamily of the predicted kinase. If a kinase subfamily is available the family and subfamily will be seprated by an underscore e.g. "DMPK_ROCK". If no subfamily is available, only the family is shown e.g. "GSK"}
+
+If no predictions were made, function returns NULL
 }
 \description{
 Score phosphosites using MIMP models (without mutation information)

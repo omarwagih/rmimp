@@ -1,7 +1,5 @@
 setwd('~/Development/mimp/')
 
-VERSION = '1.0'
-
 detachPackage <- function(pkg){
   pkg = sprintf("package:%s", pkg)
   res = tryCatch({
@@ -14,8 +12,14 @@ detachPackage <- function(pkg){
 }
 
 build_package <- function(){
+  # Update description file
+  desc = readLines('DESCRIPTION')
+  desc[grep('Version', desc)] = sprintf('Version: %s', .MIMP_VERSION)
+  desc[grep('Date', desc)] = sprintf('Date: %s', Sys.Date())
+  writeLines(desc, 'DESCRIPTION')
+  
   require(devtools)
-  targz = sprintf('rmimp_%s.tar.gz', VERSION)
+  targz = sprintf('rmimp_%s.tar.gz', .MIMP_VERSION)
   # Move up one directory
   newf = file.path('./build', targz)
   # Compile things

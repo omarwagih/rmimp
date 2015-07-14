@@ -9,6 +9,18 @@ BASE_DIR = system.file("extdata", "", package = "rmimp")
 #   writeLines('Warning: remove base dir')
 # }
 
+# Current version
+.MIMP_VERSION = '1.1'
+
+# This message appears on library or require call of package
+.onAttach <- function(lib, pkg, ...) {
+  packageStartupMessage(sprintf("MIMP v%s (2015)
+Type '?mimp' for help or see the documentation 'help(package=rmimp)' for more details
+
+If you use MIMP in your research, please cite:
+Wagih O, Reimand J, Bader GD (2015). MIMP: predicting the impact of mutations on kinase-substrate phosphorylation. Nat. Methods 12(6):531-3. doi:10.1038/nmeth.3396", .MIMP_VERSION))
+}
+
 #' Converts all columns of a data frame of class factor to character
 #'
 #' @param string String to be manipulated
@@ -396,6 +408,7 @@ mimp <- function(muts, seqs, psites=NULL, prob.thresh=0.5, log2.thresh=1, displa
 #' \item{pwm}{Name of the predicted kinase}
 #' \item{pwm_fam}{Family/subfamily of the predicted kinase. If a kinase subfamily is available the family and subfamily will be seprated by an underscore e.g. "DMPK_ROCK". If no subfamily is available, only the family is shown e.g. "GSK"}
 #' 
+#' If no predictions were made, function returns NULL
 #' @examples
 #' # Get the path to example phosphorylation data 
 #' psites.file = system.file("extdata", "ps_data.txt", package = "rmimp")
