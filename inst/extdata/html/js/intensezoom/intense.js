@@ -107,7 +107,6 @@ var Intense = (function() {
     }
 
     function track( element ) {
-
       // Element needs a src at minumun.
       if( element.getAttribute( 'data-image') || element.src ) {
         element.addEventListener( 'click', function() {

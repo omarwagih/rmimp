@@ -1,88 +1,13 @@
 BASE_DIR = system.file("extdata", "", package = "rmimp")
 
 # if(T){
+#   setwd('~/Development/mimp/')
+#   source('R/display-functions.r')
+#   source('R/io-functions.r')
+#   source('R/pwm-functions.r')
 #   BASE_DIR = '~/Development/mimp/inst/extdata/'
 #   writeLines('Warning: remove base dir')
 # }
-
-
-AA = c('A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V')
-DNA = c('A', 'T', 'G', 'C')
-RNA = c('A', 'U', 'G', 'C')
-
-AA_PRIORS_HUMAN  =   c(A=0.070, R=0.056, N=0.036, D=0.048,C=0.023,Q=0.047,E=0.071,G=0.066,H=0.026,I=0.044,
-                       L=0.100,K=0.058,M=0.021,F=0.037,P=0.063,S=0.083,T=0.053,W=0.012,Y=0.027,V=0.060)
-DNA_PRIORS_HUMAN =   c(A=0.25, C=0.25, G=0.25, T=0.25)
-
-AA_PRIORS_YEAST  =   c(A=0.055, R=0.045, N=0.061, D=0.058, C=0.013, Q=0.039, E=0.064, G=0.05, H=0.022, I=0.066,
-                       L=0.096, K=0.073, M=0.021, F=0.045, P=0.044, S=0.091, T=0.059, W=0.01, Y=0.034, V=0.056)
-DNA_PRIORS_YEAST =   c(A=0.310, C=0.191, G=0.191, T=0.309)
-
-#' Save a PWM matrix object to transfac format
-#'
-#' This saves an already generated PWM matrix object in R 
-#' to transfac format, which can be read in by RWebLogo
-#'
-#' @param pwm PWM matrix object
-#' @param file.out where the transfac matrix is written
-#' @param type 'aa', 'dna' or 'rna' depending on the namespace
-#' @keywords transfac
-#' 
-saveTransfac <- function(pwm, file.out=tempfile('transfac'), ac='FOO', type='aa'){
-  
-  id = attr(pwm, 'id') 
-  
-  NAMESPACE = AA
-  if(type=='dna') NAMESPACE = DNA
-  if(type=='rna') NAMESPACE = RNA
-  
-  pwm = pwm[NAMESPACE,]
-  
-  out = c(paste0('AC', '\t', id), 
-          'XX',
-          paste0('ID', '\t', id),
-          'XX', 
-          paste0('P0', '\t', paste(rownames(pwm), collapse='\t')))
-  
-  for(i in 1:ncol(pwm)){
-    s = as.character(i)
-    if(i < 9) s = paste0('0', i)
-    col.data = paste(pwm[,i], collapse='\t')
-    max.aa = names( which.max(pwm[,i]) )
-    out = c(out, paste0(s, '\t', col.data,  '\t', max.aa))
-  }
-  
-  out = c(out, 'XX', '//')
-  writeLines(out, file.out)
-  return(file.out)
-}
-
-
-#' Replace charachters at certain positions of a string with another charachter.
-#'
-#' @param string String to be manipulated
-#' @param pos One or more positions corresponding to charachters to be changed
-#' @param char Replacement charachter
-#' @keywords replace char
-#' @export
-#' @examples
-#' replaceChar('ABC', 2, 'X')
-replaceChar <- function(string, pos, char) { 
-  for(i in pos)
-    substr(string, i, i) <- char
-  string 
-} 
-
-#' Extracts digits from a string and returns them in a numerical form
-#'
-#' @param string String to be manipulated
-#' @keywords digits numerical
-#' @export
-#' @examples
-#' extractDigits('A123F')
-extractDigits <- function(string){
-  as.numeric( gsub('[^\\d]', '', string, perl=T) )
-}
 
 #' Converts all columns of a data frame of class factor to character
 #'
@@ -97,253 +22,25 @@ unfactor <- function(df){
   df
 }
 
-#' Construct position weight matrix
-#' 
-#' Makes a position weight matrix given aligned sequences.
-#'
-#' @param seqs Aligned sequences all of the same length
-#' @param pseudocount Pseudocount factor. Final pseudocount is background probability * this factor
-#' @param relative.freq TRUE if each column should be divided by the sum
-#' @param type Type of sequences 'AA' or 'DNA'
-#' @param priors Named character vector containing priors of amino acids.
-#' @param log.bg If true, relative frequencies will be converted to weights using -log of freq/bgfreq
-#' @keywords pwm construct
-#' @export
-#' @examples
-#' # No examples
-PWM <- function(seqs, pseudocount=0.01, relative.freq=T, type='AA', priors=AA_PRIORS_HUMAN, log.bg=F){
-  
-  
-  # Ensure same length characters 
-  seq.len = sapply(seqs, nchar)
-  num.pos = seq.len[1]
-  if(! all(seq.len == num.pos)) stop('Unequal length of sequences')
-  
-  # Type validity
-  if(!type %in% c('AA', 'DNA')) stop('Type must be AA or DNA')
-  
-  # List of valid amino acids, sorted
-  namespace = AA
-  if(type == 'DNA') namespace = DNA
-  
-  # Match priors to aa 
-  bg.prob = priors[match(namespace, names(priors))]
-  
-  # Make matrix of letters
-  split = unlist( sapply(seqs, function(seq){strsplit(seq, '')}) )
-  m = t( matrix(split, seq.len, length(split)/num.pos) )
-  
-  # Construct PWM
-  pwm.matrix = apply(m, 2, function(pos.data){
-    # Get frequencies 
-    t = table(pos.data)
-    # Match to aa
-    ind = match(namespace, names(t))
-    # Create column
-    col = t[ind]
-    col[is.na(col)] = 0
-    names(col) = namespace
-    
-    # Do pseudocounts if were logging
-    if(log.bg) col = col + bg.prob
-    
-    # Do relative frequencies
-    if(relative.freq) col = col / sum(col)
-    
-    col
-  })
-  
-  attr(pwm.matrix, 'pseudocount') = pseudocount
-  ic10 = apply(pwm.matrix, 2, function(col) sum(col * log10(col/bg.prob), na.rm=T) )
-  ic2 = apply(pwm.matrix, 2, function(col) sum(col* log2(col/bg.prob), na.rm=T))
-  attr(pwm.matrix, 'ic10') = ic10
-  attr(pwm.matrix, 'ic2') = ic2
-  
-  # shannon entropy from http://en.wikipedia.org/wiki/Sequence_logo
-  Hi = apply(pwm.matrix, 2, function(col) - sum(col * log2(col), na.rm=T) )
-  en = (1/log(2)) * ( (20 - 1)/ (2*length(seqs)) )
-  shan = log2(20) - Hi + en
-  attr(pwm.matrix, 'shannon') = shan
-  
-  if(log.bg) pwm.matrix = apply(pwm.matrix, 2, function(col) log2(col / bg.prob))
-  
-  # Assign AA names to rows/pos col
-  rownames(pwm.matrix) = namespace
-  colnames(pwm.matrix) = 1:num.pos
-  attr(pwm.matrix, 'log.bg') = log.bg
-  return(pwm.matrix)
-}
-
-
-#' Get weight/probability for each amino acid in a sequence 
-#' 
-#' Gets weight/probability for the amino acid at each position of the sequence
-#' as an array.
-#'
-#' @param seqs One or more sequences to be processed
-#' @param pwm Position weight matrix
-#'  
-#' @keywords pwm mss match tfbs
-#' @export
-#' @examples
-#' # No Examples
-scoreArray <- function(seqs, pwm){
-  # Split sequence
-  sp = strsplit(seqs, '')
-  
-  seq.lens = sapply(sp, length)
-  seq.len = seq.lens[1]
-  if(any(seq.lens != seq.len)) stop('Input sequences must be same length')
-  
-  # Iterate through sequences
-  dat = lapply(sp, function(seq){
-    # Match sequence to the PWM
-    mat = matrix(c(match(seq, rownames(pwm)), 1:seq.len), seq.len, 2)
-    prob.vector = pwm[ mat ]
-    prob.vector
-  })
-  names(dat) = seqs
-  return(dat)
-}
-
-
-#' Compute classical log score 
-#' 
-#' Computes sum of weights of a pwm for a givet set of sequences.
-#'
-#' @param seqs Sequences to be scored
-#' @param pwm Position weight matrix
-#' @param na.rm Remove NA scores?
-#' @param ignore.ind index to ignore, default is 8: central STY residue
-#'  
-#' @keywords pwm log
-#' @examples
-#' # No Examples
-logscore <- function(seqs, pwm, na.rm=F, ignore.ind=8){
-  scores = sapply(scoreArray(seqs, pwm), function(sa) sum(sa[-ignore.ind], na.rm=T))
-  # Remove NA if requested
-  if(na.rm) scores = scores[!is.na(scores)]
-  return(scores)
-}
-
-#' Compute matrix similarity score as described in MATCH algorithm
-#' 
-#' Computes matrix similarity score of a PWM with a k-mer.
-#' Score ranges from 0-1, as described in [PMID: 12824369]
-#'
-#' @param seqs Sequences to be scored
-#' @param pwm Position weight matrix
-#' @param is.kinase.pwm TRUE if PWM is that of a kinase
-#' @param na.rm Remove NA scores?
-#'  
-#' @keywords pwm mss match tfbs
-#' @export
-#' @examples
-#' # No Examples
-mss <- function(seqs, pwm, is.kinase.pwm=T, na.rm=F, ignore.ind=8){
-  
-  central.res = '*'
-  if(is.kinase.pwm){
-    # Only score sequences which have a central residue S/T or Y depending on the PWM
-    kinase.type = names(which.max(pwm[,ceiling(ncol(pwm)/2)]))
-    kinase.type = ifelse(grepl('S|T', kinase.type), 'S|T', 'Y')
-    central.res = kinase.type
-  }
-  
-  # Central residue index
-  #central.ind = ceiling(ncol(pwm)/2)
-  central.ind = ignore.ind
-  
-  if(attr(pwm, 'log.bg')) {
-    scores = logscore(seqs = seqs, pwm = pwm, na.rm = na.rm, ignore.ind = ignore.ind) 
-  }else{
-    
-    # Best/worst sequence match
-    oa = scoreArray(bestSequence(pwm), pwm)[[1]]
-    wa = scoreArray(worstSequence(pwm), pwm)[[1]]
-    
-    I = attr(pwm, 'ic2')
-    
-    score.arr = scoreArray(seqs, pwm)
-    scores = sapply(score.arr, function(sa){
-      na = is.na(sa)
-      
-      # Replace NAs with worst sequence
-      sa[na] = wa[na]
-      # Set all to false
-      na = na & F
-      
-      na[central.ind] = is.kinase.pwm
-      
-      # Get information content of non-NA values
-      IC = I[!na]
-      
-      # MSS method
-      curr.score  = sum( IC * (sa [!na]), na.rm=T ) 
-      opt.score   = sum( IC * (oa [!na]), na.rm=T )
-      worst.score = sum( IC * (wa [!na]), na.rm=T )
-      score.final = ( (curr.score - worst.score) / (opt.score - worst.score) )
-      score.final
-    })
-  }
- 
-  if(central.res != '*'){
-    keep = grepl(central.res, substr(seqs, central.ind, central.ind))
-    scores[!keep] = NA
-  }
-  
-  # Remove NA if requested
-  if(na.rm) scores = scores[!is.na(scores)]
-  
-  return(scores)
-}
-
-
-#' Given a position weight matrix, find the best matching sequence
-#' 
-#' Finds the amino acid at each position of the PWM with the highest occurence.
-#' Used in matrix similarity score calculation.  
-#'
-#' @param pwm Position weight matrix
-#' @keywords pwm best
-#' @examples
-#' # No Examples
-bestSequence <- function(pwm){
-  b = rownames(pwm)[apply(pwm, 2, which.max)]
-  return(paste(b, collapse=''))
-}
-
-#' Given a position weight matrix, find the worst matching sequence
-#' 
-#' Finds the amino acid at each position of the PWM with the lowest occurence.
-#' Used in matrix similarity score calculation.  
-#'
-#' @param pwm Position weight matrix
-#' @keywords pwm worst
-#' @examples
-#' # No Examples
-worstSequence <- function(pwm){
-  w = rownames(pwm)[apply(pwm, 2, which.min)]
-  return(paste(w, collapse=''))
-}
 
 #' Get flanking sequences of a position.
 #'
 #' This function obtains the flanking sequence at one or more position. 
-#' Out of bound indices are replaced by a blank charachter. 
+#' Out of bound indices are replaced by a blank character. 
 #'
-#' @param seqs Charachter vector of sequences. If only one sequence is provided, 
+#' @param seqs Character vector of sequences. If only one sequence is provided, 
 #'    indices from \code{inds} are assumed to all be from the same sequence. 
 #' @param inds Numerical vector of positions corresponding to the sequences provided in \code{seqs}. 
-#' @param flank Value indicating the number of charachters to extract, before and after an index
-#' @param empty.char Charachter used to replace out of bound flanking sequences
+#' @param flank Value indicating the number of characters to extract, before and after an index
+#' @param empty.char Character used to replace out of bound flanking sequences
 #' @keywords flank sequence
+#' @export
 #' @examples
-#' # One sequence and one index. Central charachter is 'B'
+#' # One sequence and one index. Central character is 'B'
 #' flankingSequence(seqs='ABC', inds=2, flank=1)
 #' # An example showing the use of empty.char 
 #' flankingSequence(seqs='ABC', inds=2, flank=5)
-#' # An example with muliple sequences and indicies
+#' # An example with multiple sequences and indices
 #' flankingSequence(seqs=c('ABC', 'XYZ'), inds=c(2, 1), flank=1)
 flankingSequence <- function(seqs, inds, flank=7, empty.char='-'){
   if(length(seqs) == 1 & length(inds) >= length(seqs)) seqs = rep(seqs, length(inds))
@@ -351,12 +48,7 @@ flankingSequence <- function(seqs, inds, flank=7, empty.char='-'){
   
   border = paste0(rep(empty.char, flank), collapse="")
   seqs = sapply(seqs, function(s) paste0(border,s,border))
-  
-  ret = sapply(1:length(seqs), function(i){
-    p = flank + inds[i]
-    substr(seqs[i], p-flank, p+flank)
-  })
-  return(ret)
+  substr(seqs, inds, inds+(flank*2))
 }
 
 #' Find phosphorylation related variants (pSNVs)
@@ -372,192 +64,163 @@ flankingSequence <- function(seqs, inds, flank=7, empty.char='-'){
 #' @param seqs Sequence data as a name list. Names of the list correspond to the gene or 
 #'    protein name. Each entry contains the collapsed sequence.
 #' @param flank Number of amino acids flanking the psite to be considered
-#' @param multicore If true, will use mclapply to speed things up!
 #' 
 #' @keywords psnv psites mutation snp
+#' @export
 #' @examples
 #' # No examples
-pSNVs <- function(muts, psites, seqs, flank=7, multicore=F){
-  # Remove any factors
-  muts = unfactor(muts)
-  psites = unfactor(psites)
+pSNVs <- function(md, pd, seqdata, flank=7){
+  md2 = md; pd2 = pd
+  # Set starts and ends
+  pd2$start = pd2$pos - flank
+  pd2$end = pd2$pos + flank
   
-  names(psites)[1:2] = c('gene', 'psite_pos')
-  names(muts)[1:2] = c('gene', 'mut')
-  # If we have a char class instead of numerical, extract numerical values
-  if(is.character( psites$psite_pos ))
-    psites$psite_pos = extractDigits(psites$psite_pos)
+  # Find overlaps
+  df = subset(merge(pd2, md2), start <= mut_pos & mut_pos <= end)
+  df$psite_pos = df$pos
+  df$mut_dist = df$mut_pos - df$pos
   
-  # Split psites by gene
-  psites = split(psites, psites$gene)
+  df$mt = df$wt = flankingSequence(seqdata[df$gene], df$psite_pos, flank)
   
-  # Extract ref/alt amino acid and mutation position
-  tt = t( sapply(strsplit(muts$mut, ''), function(s){
-    c(s[1], s[length(s)], paste0(s[2:(length(s)-1)],collapse=''))
-  }) )
-  tt = as.data.frame(tt, stringsAsFactors=F)
-  names(tt) = c('ref_aa', 'alt_aa', 'mut_pos')
-  tt$mut_pos = as.numeric(tt$mut_pos)
-  muts = cbind(muts, tt)
+  # Mutate!
+  rel.ind = df$mut_pos - df$start + 1
+  base::substr(df$mt, rel.ind, rel.ind) = df$alt_aa
   
-  mutAA = sapply(1:nrow(muts), function(i){
-    j = muts$mut_pos[i]
-    substr( seqs[[ muts$gene[i] ]], j, j )
-  })
-  wrongMut = mutAA != '' & mutAA != muts$ref_aa
-  
-  if(sum(wrongMut) > 0){
-    wrongMutHead = head(wrongMut)
-    wr = head(muts[wrongMutHead,])
-    wr = sprintf('%s: expected %s at %s found %s', wr$gene, wr$ref_aa, wr$mut_pos, mutAA[wrongMutHead])
-    warning(sprintf('The reference amino acid for %s mutation(s) do not correspond to the amino acid in the sequence:\n%s',
-                    sum(wrongMut), paste0(wr, collapse='\n'),
-                    ifelse(sum(wrongMut) > 6, '\n...', '') ))
-  }
-  
-  # Are we using mclapply?
-  myapply = lapply
-  if(multicore) myapply = mclapply
-  
-  # Go through each mutation
-  mut_ps = myapply(1:nrow(muts), function(i){
-    prot = muts$gene[i]
-    mut_pos = muts$mut_pos[i]
-    
-    # Get psites for the mutated gene
-    prot_psites = psites[[prot]]
-    
-    # Check if the mutation exists in any of the psites 
-    t = ( mut_pos <= (prot_psites$psite_pos + flank) 
-          & mut_pos >= (prot_psites$psite_pos - flank) )
-    if(sum(t) == 0){
-      NULL
-    }else{
-      # Mutate sequence
-      mut_seq = replaceChar(seqs[[prot]], mut_pos, muts[i,]$alt_aa)
-      # Append mutation information
-      prot_psites = prot_psites[t,]
-      # Append mutated flanking sequence
-      prot_psites$mt = flankingSequence(mut_seq, prot_psites$psite_pos, flank)
-      # Bind everything
-      z = prot_psites[-1]
-      suppressWarnings( ret <- cbind(muts[i,], z) )
-      ret$mut_dist = mut_pos - prot_psites$psite_pos
-      ret
-    }
-  })
-  
-  mut_ps = mut_ps[!sapply(mut_ps, is.null)]
-  mut_ps = do.call(rbind, mut_ps)
-  
-  # We have no pSNVs
-  if(is.null(mut_ps)) return(mut_ps)
-  
-  mut_ps$wt = flankingSequence(seqs[mut_ps$gene], mut_ps$psite_pos, flank)
-  mut_ps = mut_ps[,c('gene', 'mut', 'ref_aa', 'alt_aa', 'mut_pos', 
-                     'psite_pos', 'mut_dist', 'wt', 'mt')]
-  return(mut_ps)
+  df = df[,!names(df) %in% c('pos', 'start', 'end')]
+  df
 }
 
 
 
-
-#' Compute liklihood using probability density function
+#' Compute likelihood using probability density function
+#' 
+#' @param p scores
+#' @param params parameters of GMM from getParams
+#' @export
 .probPoint = function(p, params) {
-  f = dnorm(p, mean = params$means, sd = params$sds, log=F) * params$wts
-  return(sum(f))
+  # For all points, get likeli hood for each component
+  component_vals = apply(params, 1, function(r){
+    dnorm(p, mean = r['means'], sd = r['sds'], log=F) * r['wts']
+  })
+  
+  if(length(p) == 1) return(sum(component_vals))
+  # Summ accross all components
+  apply(component_vals, 1, sum)
 }
 
 #' Computing posterior probability - ploss and pgain
 #' 
-#' @param wt.score Wild type score
-#' @param mt.score Mutant score
-#' @param dist.params Distribution parameters of GMMs (foreground and background). This is precomputed and comes built into mimp.
+#' @param wt.scores Wild type score
+#' @param mt.scores Mutant score
+#' @param fg.params Distribution parameters of GMMs (foreground). This is precomputed and comes built into mimp.
+#' @param bg.params Distribution parameters of GMMs (background). This is precomputed and comes built into mimp.
 #' @param auc AUC of the model. This is precomputed and comes built into mimp.
-#' @param show.likelihood If TRUE, individual liklihoods used to compute ploss and pgain is returned. Otherwise only ploss and pgain returned
-pRewiringPosterior <- function(wt.score, mt.score, dist.params, auc, show.likelihood=F){
-  fg.params = dist.params$fg.params
-  bg.params = dist.params$bg.params
+#' @param intermediate If TRUE, intermediate likelihoods used to compute ploss and pgain is returned. Otherwise only ploss and pgain returned
+#' @export
+pRewiringPosterior <- function(wt.scores, mt.scores, fg.params, bg.params, auc=1, intermediate=F){
   
   fg_prior = auc/(1+auc)
   bg_prior = 1-fg_prior
   
-  # Get probability of wt/mt in foreground
-  p.wt.fg = .probPoint(wt.score, fg.params) * fg_prior
-  p.mt.fg = .probPoint(mt.score, fg.params) * fg_prior
+  # Get probability of wt in fg/bg
+  l.wt.fg = .probPoint(wt.scores, fg.params) * fg_prior
+  l.wt.bg = .probPoint(wt.scores, bg.params) * bg_prior
   
-  # Get probability of wt/mt in background
-  p.wt.bg = .probPoint(wt.score, bg.params) * bg_prior
-  p.mt.bg = .probPoint(mt.score, bg.params) * bg_prior
+  # Get wt posteriors 
+  post.wt.fg = (l.wt.fg) / (l.wt.bg + l.wt.fg)
+  post.wt.bg = (l.wt.bg) / (l.wt.bg + l.wt.fg)
   
-  # Get posteriors 
-  post.wt.fg = (p.wt.fg) / (p.wt.bg + p.wt.fg)
-  post.mt.bg = (p.mt.bg) / (p.mt.bg + p.mt.fg)
+  if(missing(mt.scores))
+    return(data.frame(l.wt.fg, l.wt.bg, post.wt.fg, post.wt.bg))
   
-  post.wt.bg = (p.wt.bg) / (p.wt.bg + p.wt.fg)
-  post.mt.fg = (p.mt.fg) / (p.mt.bg + p.mt.fg)
+  
+  # Get probability of mt in fg/bg
+  l.mt.fg = .probPoint(mt.scores, fg.params) * fg_prior
+  l.mt.bg = .probPoint(mt.scores, bg.params) * bg_prior
+  
+  # Get mt posteriors
+  post.mt.fg = (l.mt.fg) / (l.mt.bg + l.mt.fg)
+  post.mt.bg = (l.mt.bg) / (l.mt.bg + l.mt.fg)
+  
+  post.wt.fg[is.na(post.wt.fg)] = 0
+  post.mt.bg[is.na(post.mt.bg)] = 1
+  post.wt.bg[is.na(post.wt.bg)] = 1
+  post.mt.fg[is.na(post.mt.fg)] = 0
   
   # Get probabilities of loss and gain
   ploss = post.wt.fg * post.mt.bg
   pgain = post.wt.bg * post.mt.fg
   
-  if(show.likelihood){
-    c(p.wt.fg=post.wt.fg, p.mt.fg=post.mt.fg, p.wt.bg=post.wt.bg, p.mt.bg=post.mt.bg, 
-      ploss=ploss, pgain=pgain)
-  }else{
-    c(ploss=ploss, pgain=pgain)
+  if(intermediate){
+    return(data.frame(l.wt.fg, l.mt.fg, l.wt.bg, l.mt.bg, 
+                      post.wt.fg, post.mt.fg, post.wt.bg, post.mt.bg, 
+                      ploss, pgain))
   }
+  data.frame(ploss, pgain)
 }
-
-
 
 
 #' Score wt and mt sequences for a pwm
 #'
-#' @param pwm Position weight matrix of interest
+#' @param obj MIMP kinase object containing PWM, auc, GMM parameters, family name, etc.
 #' @param mut_ps psnvs data frame containing wt and mt sequences computed from pSNVs function
-#' @param params Mixture model parameters for foreground and background distributions. This is precomputed and comes built into mimp.
-#' @param auc The AUC of the kinase in question. This is precomputed and comes built into mimp.
-#' @param is.kinase.pwm TRUE if pwm is that of a kinase
 #' @param prob.thresh Probability threshold of gains and losses. This value should be between 0.5 and 1.
 #' @param log2.thresh Threshold for the absolute value of log ratio between wild type and mutant scores. Anything less than this value is discarded (default: 1).
 #' @param include.cent If TRUE, gains and losses caused by mutation in the central STY residue are kept
 #' 
-#' @keywords mut psites score snp
-scoreWtMt <- function(pwm, mut_ps, params, auc, is.kinase.pwm=T, prob.thresh=0.5, log2.thresh=1, include.cent=F){
+#' @keywords mut psites score snp snv
+computeRewiring <- function(obj, mut_ps, prob.thresh=0.5, log2.thresh=1, include.cent=F, degenerate.pwms=F, .degenerate.groups=c('DE','KR','ILMV')){
   
-  mut_ps$score_wt = mss(mut_ps$wt, pwm, is.kinase.pwm)
-  mut_ps$score_mt = mss(mut_ps$mt, pwm, is.kinase.pwm)
+  # Score wild type and mutant sequences
+  pwm = obj$pwm
+  
+  # make PWM degenerate if needed
+  if(degenerate.pwms) pwm = degeneratePWM(pwm, .degenerate.groups)
+  mut_ps$score_wt = mss(mut_ps$wt, pwm)
+  mut_ps$score_mt = mss(mut_ps$mt, pwm)
+  
+  # Compute the log2 ratio
   mut_ps$log_ratio <- log2(mut_ps$score_mt/mut_ps$score_wt) 
   
-  mut_ps$pwm = ''
+  # Set the kinase name, family and number of sequences used to build the model
+  mut_ps$pwm = obj$name
+  mut_ps$pwm_fam = obj$family
+  mut_ps$nseqs = attr(obj$pwm, 'nseqs')
   
-  if(include.cent){
-    is.cent = mut_ps$mut_dist == 0
-    mut_ps$score_wt[is.cent & is.na(mut_ps$score_wt)] = 0
-    mut_ps$score_mt[is.cent & is.na(mut_ps$score_mt)] = 0
-  }
-  mut_ps = mut_ps[!is.na(mut_ps$score_wt) & !is.na(mut_ps$score_mt),]
+  # Remove cases where wt and mt are NA
+  mut_ps = mut_ps[!(is.na(mut_ps$score_wt) & is.na(mut_ps$score_mt)),]
   
-  if(nrow(mut_ps) > 0){
-    res = as.data.frame(t(sapply(1:nrow(mut_ps), function(i){
-      pRewiringPosterior(mut_ps$score_wt[i], mut_ps$score_mt[i], params, auc)
-    })))
-    
-    ind = res$ploss >= prob.thresh | res$pgain >= prob.thresh
-    mut_ps = cbind(mut_ps[ind,], res[ind,])
-    
-    mut_ps = mut_ps[is.na(mut_ps$log_ratio) | abs(mut_ps$log_ratio) >= log2.thresh, ]
-    
-    effect = rep('gain', nrow(mut_ps))
-    effect[mut_ps$ploss > prob.thresh] = 'loss'
-    mut_ps$prob = pmax(mut_ps$ploss, mut_ps$pgain)
-    mut_ps$effect = effect
-    mut_ps = mut_ps[,!names(mut_ps) %in% c('ploss', 'pgain')]
-  }else{
-    mut_ps$prob = mut_ps$effect = numeric(0)
-  }
- 
+  # Do we have any data left?
+  if(nrow(mut_ps) == 0) return(NULL)
+  
+  
+  res = pRewiringPosterior(mut_ps$score_wt, mut_ps$score_mt, obj$fg.params, obj$bg.params, obj$auc)
+  
+  # Filter by probability threshold
+  ind = res$ploss >= prob.thresh | res$pgain >= prob.thresh
+  
+  # Nothing passes the prob threshold, return NULL
+  if(sum(ind) == 0) return(NULL)
+  
+  # Join with main data frame
+  mut_ps = cbind(mut_ps[ind,], res[ind,])
+  
+  # Filter by log2 ratio, things with NAs have no log ratio
+  mut_ps = mut_ps[is.na(mut_ps$log_ratio) | abs(mut_ps$log_ratio) >= log2.thresh, ]
+  
+  # Nothing passes the log2 ratio, return null
+  if(nrow(mut_ps) == 0) return(NULL)
+  
+  # Set the effect
+  effect = rep('gain', nrow(mut_ps))
+  effect[mut_ps$ploss >= prob.thresh] = 'loss'
+  # Set prob as maximum of ploss and pgain
+  mut_ps$prob = pmax(mut_ps$ploss, mut_ps$pgain)
+  mut_ps$effect = effect
+  
+  # Remove ploss pgain. Retain only 'prob'
+  mut_ps = mut_ps[,!names(mut_ps) %in% c('ploss', 'pgain')]
+  
   return(mut_ps)
 }
 
@@ -575,7 +238,7 @@ scoreWtMt <- function(pwm, mut_ps, params, auc, is.kinase.pwm=T, prob.thresh=0.5
 #' }
 #' @param seqs Sequence data file containing protein sequences in FASTA format OR 
 #'  named list of sequences where each list element is the uppercase sequence and the 
-#'  name of each element is that of the protein. Example: list(TP53="ABCXYZ", CDK2="HJKEWR")
+#'  name of each element is that of the protein. Example: list(GENEA="ARNDGH", GENEB="YVRRHS")
 #' @param psites Phosphorylation data file (optional): a space delimited text file OR data frame containing  two columns (1) gene and (1) positions of phosphorylation sites. Example:
 #' \tabular{ll}{
 #'    TP53 \tab 280\cr
@@ -585,24 +248,24 @@ scoreWtMt <- function(pwm, mut_ps, params, auc, is.kinase.pwm=T, prob.thresh=0.5
 #' @param prob.thresh Probability threshold of gains and losses. This value should be between 0.5 and 1.
 #' @param log2.thresh Threshold for the absolute value of log ratio between wild type and mutant scores. Anything less than this value is discarded (default: 1).
 #' @param include.cent If TRUE, gains and losses caused by mutation in the central STY residue are kept. Scores of peptides with a non-STY central residue is given a score of 0 (default: FALSE).
-#' @param model.data Name of specifcity model data to use, can be "hconf" : individual experimental kinase specificity models used to scan for rewiring events. For experimental kinase specificity models, grouped by family, set to "hconf-fam". Both are considered high confidence. For lower confidence predicted specificity models , set to "lconf". NOTE: Predicted models are purely speculative and should be used with caution
+#' @param model.data Name of specificity model data to use, can be "hconf" : individual experimental kinase specificity models used to scan for rewiring events. For experimental kinase specificity models, grouped by family, set to "hconf-fam". Both are considered high confidence. For lower confidence predicted specificity models , set to "lconf". NOTE: Predicted models are purely speculative and should be used with caution
 #' 
 #' @return 
 #' The data is returned in a \code{data.frame} with the following columns:
 #' \item{gene}{Gene with the rewiring event}
 #' \item{mut}{Mutation causing the rewiring event}
-#' \item{psite_pos}{Position of the central residue of the phosphosite}
-#' \item{mut_dist}{Distance of the mutation relative to the central phosphosite}
-#' \item{wt}{Sequence of the wildtype phosphosite (before the mutation) }
-#' \item{mt}{Sequence of the mutated phosphosite (after the mutation)}
-#' \item{score_wt}{Matrix similarity score of the wildtype phosphosite }
-#' \item{score_mt}{Matrix similarity score of the mutated phosphosite }
-#' \item{log_ratio}{Log2 ratio between mutant and wildtype scores. A high positive log ratio represents a high confidence gain-of-signaling event. A high negative log ratio represents a high confidence loss-of-signaling event. This ratio is NA for mutations that affect the central phosphorylation sites}
-#' \item{pwm}{Name of the kinase being rewiried}
-#' \item{prob}{Joint probability of wild type sequence belonging to the foreground distribution and mutated sequence belonging to the background distribution, for loss and vice versa for gain}
-#' \item{effect}{Type of rewiring event, can be "loss" or "gain"}
+#' \item{psite_pos}{Position of the phosphosite}
+#' \item{mut_dist}{Distance of the mutation relative to the central residue}
+#' \item{wt}{Sequence of the wildtype phosphosite (before the mutation). Score is NA if the central residue is not S, T or Y}
+#' \item{mt}{Sequence of the mutated phosphosite (after the mutation). Score is NA if the central residue is not S, T or Y}
+#' \item{score_wt}{Matrix similarity score of the wildtype phosphosite}
+#' \item{score_mt}{Matrix similarity score of the mutated phosphosite}
+#' \item{log_ratio}{Log2 ratio between mutant and wildtype scores. A high positive log ratio represents a high confidence gain-of-phosphorylation event. A high negative log ratio represents a high confidence loss-of-phosphorylation event. This ratio is NA for mutations that affect the central phosphorylation sites}
+#' \item{pwm}{Name of the kinase being rewired}
+#' \item{pwm_fam}{Family/subfamily of kinase being rewired. If a kinase subfamily is available the family and subfamily will be separated by an underscore e.g. "DMPK_ROCK". If no subfamily is available, only the family is shown e.g. "GSK"}
 #' \item{nseqs}{Number of sequences used to construct the PWM. PWMs constructed with a higher number of sequences are generally considered of better quality.}
-#' \item{pwm_fam}{Family/subfamily of kinase being rewired. If a kinase subfamily is available the family and subfamily will be seprated by an underscore e.g. "DMPK_ROCK". If no subfamily is available, only the family is shown e.g. "GSK"}
+#' \item{prob}{Joint probability of wild type sequence belonging to the foreground distribution and mutated sequence belonging to the background distribution, for loss and vice versa for gain.}
+#' \item{effect}{Type of rewiring event, can be "loss" or "gain"}
 #' 
 #' 
 #' @keywords mimp psites mutation snp snv pwm rewiring phosphorylation kinase
@@ -623,438 +286,208 @@ scoreWtMt <- function(pwm, mut_ps, params, auc, is.kinase.pwm=T, prob.thresh=0.5
 #' 
 #' # Show head of results
 #' head(results)
-mimp <- function(muts, seqs, psites, prob.thresh=0.5, log2.thresh=1, display.results=T, include.cent=F, model.data='hconf'){
-
+mimp <- function(muts, seqs, psites=NULL, prob.thresh=0.5, log2.thresh=1, display.results=T, include.cent=F, model.data='hconf'){
   
+  # , degenerate.pwms=F, .degenerate.groups=c('DE','KR')
+  # Constant - do not change
   flank=7
-  MUT_REGEX = '^[A-Z]\\d+[A-Z]$'
-  DIG_REGEX = '^\\d+$'
   
+  # Ensure valid thresholds
   if(!is.numeric(prob.thresh) | prob.thresh > 1 | prob.thresh < 0) stop('Probability threshold "prob.thresh" must be between 0.5 and 1')
   
-  z = c('hconf', 'hconf-fam', 'lconf')
-  if(length(model.data) != 1 | !is.character(model.data)) stop('model.data must be a character of length one')
+  # Read in data
+  seqdata = .readSequenceData(seqs)
+  md = .readMutationData(muts, seqdata)
+  pd = .readPsiteData(psites, seqdata)
   
-  custom.models = grepl('.rds$', model.data)
-  if(!model.data %in% z & !custom.models) stop('model.data must be one of the following: "hconf", "hconf-fam", or "lconf"')
-  
-  # 1. Read sequence data
-  writeLines('Reading fasta data from file ...')
-  seqdata = seqs
-  if( !is.list(seqs) ) 
-    seqdata = .read.fasta(seqs, seqtype='AA', forceDNAtolower=F, as.string=T)
-  
-  # 2. Read mutation data
-  writeLines('Reading mutation data from file ...')
-  md = muts
-  if( !is.data.frame(muts) ) 
-    md = read.table(muts, header=F, stringsAsFactors=F)
-  names(md)[1:2] = c('gene', 'mut')
-  
-  # 2. Validate mutation data
-  # Ensure valid regex for mutations
-  if(!(all(grepl(MUT_REGEX, md$mut) ))) 
-    stop('Mutations must follow the following format X123Y for example: A78R!')
-  
-  # Ensure gene in mutation data is matched to fasta file, if not ignore these rows
-  z = setdiff(md$gene, names(seqdata))
-  if(length(z) > 0){
-    warning(sprintf('%s genes found in mutation data could not be matched to headers of the fasta file and will be ignored. Genes: %s', 
-                    length(z), paste0(z, collapse=', ')))
-    md = md[!md$gene %in% z,]
-  }
-  
-  # 3. Read p-site data
-  have.ps = T
-  if(missing(psites)){
-    have.ps = F
-    psites = NULL
-  }
-  if(! is.null(psites)){
-    writeLines('Reading phosphosites data from file ...')
-    pd = psites
-    if( !is.data.frame(psites) ) 
-      pd = read.table(psites, header=F, stringsAsFactors=F)
-    names(pd)[1:2] = c('gene', 'pos')
-  }else{
-    # No psite file, generate psites using all STYs
-    writeLines('No phosphosite data found, generating potential phosphosites using all STYs ...')
-    sd_sp = strsplit(unlist(seqdata), '')
-    pd = lapply(names(sd_sp), function(n){
-      ind = grep('[STY]', sd_sp[[n]])
-      data.frame(gene=n, pos=ind, stringsAsFactors=F)
-    })
-    pd = do.call(rbind, pd)
-  }
-  
-  # 3. Validate p-site data
-  # Ensure numerical values in p-site position data
-  if(!(all(grepl(DIG_REGEX, pd$pos) ))) 
-    stop('All positions of psites must be non-negative and non-zero!')
-  
-  # Ensure gene in p-site data is matched to fasta file, if not ignore these rows
-  z = setdiff(pd$gene, names(seqdata))
-  if(length(z) > 0){
-    warning(sprintf('%s genes found in psite data could not be matched to headers of the fasta file and will be ignored. Genes: %s', 
-                    length(z), paste0(z, collapse=', ')))
-    pd = pd[!pd$gene %in% z,]
-  }
-  
+  # Keep only genes we have data for
   md = md[md$gene %in% pd$gene,]
   seqdata = seqdata[names(seqdata) %in% pd$gene]
   
-  if(nrow(pd) == 0){
-    warning('No phosphorylation data remaining after filtering!')
-    return(NULL)
-  }
-  if(nrow(md) == 0){
-    warning('No mutation data remaining after filtering!')
-    return(NULL)
-  }
-  if(length(seqdata) == 0){
-    warning('No sequence data remaining after filtering!')
+  # Validate that mutations mapp to the correct residue
+  .validateMutationMapping(md, seqdata)
+  
+  # If we have nothing left, throw a warning and return NULL
+  if(nrow(pd) == 0 | nrow(md) == 0 | length(seqdata) == 0){
+    warning('No phosphorylation, mutation or sequence data remaining after filtering!')
     return(NULL)
   }
   
-  psiteAA = sapply(1:nrow(pd), function(i){
-    j = pd$pos[i]
-    substr( seqdata[[pd$gene[i]]], j,j ) 
-  })
+  # Ensure psite positions map to an S, T or Y
+  .validatePsitesSTY(pd, seqdata)
   
-  wrongPsite = psiteAA != '' & !grepl('S|T|Y', psiteAA)
-  
-  if(sum(wrongPsite) > 0){
-    wrongPsiteHead = head(wrongPsite)
-    wr = head(pd[wrongPsite,])
-    wr = sprintf('%s: expected STY at %s found %s', wr$gene, wr$pos, psiteAA[wrongPsiteHead])
-    warning(sprintf('There are %s psite(s) that do not correspond to an S, T or Y. These will be ignored:\n%s%s', 
-                    sum(wrongPsiteHead), paste(wr, collapse='\n'), 
-                    ifelse(sum(wrongPsiteHead) > 6, '\n...', '') ))
-  }
-  
+  # Get mutations in flanking regions of psites
   mut_psites = pSNVs(md, pd, seqdata, flank)
-  if(is.null(mut_psites)){
+  
+  # Are we keeping central residues?
+  if(!include.cent) mut_psites = mut_psites[mut_psites$mut_dist != 0,]
+  
+  # If no mutations map, throw warning and return NULL
+  if(nrow(mut_psites) == 0){
     warning('No pSNVs were found!')
     return(NULL)
   }
   
-  writeLines('Loading kinase specificity models and cutoffs ...')
-  mdata = c('hconf'='mimp_data.rds', 'hconf-fam'='mimp_data_fam.rds', 'lconf'='mimp_data_newman.rds')
+  # Get data 
+  cat('\r.... | loading specificity models')
+  mpath = .getModelDataPath(model.data)
+  model.data = mpath$id
+  mdata = readRDS(mpath$path)
+  cat('\rdone\n')
   
-  if(custom.models){
-    writeLines('Reading custom mimp models ...')
-    data.file = model.data
-    model.data = 'custom'
-    mdata = readRDS(data.file)
-  }else{
-    data.file = mdata[model.data]
-    mdata = readRDS( file.path(BASE_DIR, data.file))
-  }
-  
-  pwms = mdata$pwms
-  nseqs = mdata$nseqs
-  params = mdata$params
-  aucs = mdata$aucs
-  
-  writeLines('Predicting kinase rewiring events ...')
-  pb <- txtProgressBar(min = 0, max = length(pwms), style = 3)
-  
-  
-  scored = lapply(1:length(pwms), function(i){
+  scored = lapply(1:length(mdata), function(i){
     # Processing PWM i
-    setTxtProgressBar(pb, i)
+    obj = mdata[[i]]
     
-    # Get PWM and name
-    pwm = pwms[[i]]
-    name = names(pwms)[i]
-    cur.params = params[[name]]
-    cur.auc = aucs[[name]]
-    # Score
-    ss = scoreWtMt(pwm, mut_psites, cur.params, cur.auc, is.kinase.pwm = T, prob.thresh, log2.thresh, include.cent)
+    # Print msg
+    perc = round((i/length(mdata))*100)
+    cat(sprintf('\r%3d%% | predicting kinase rewiring events', perc))
     
-    if(nrow(ss)>0){
-      ss$pwm = name
-      ss$nseqs = nseqs[[name]]
-    }
-    ss
+    computeRewiring(obj, mut_psites, prob.thresh, log2.thresh, include.cent)
   })
+  cat('\rdone\n')
   
-  close(pb)
-  
-  z = scored
-  scored = scored[sapply(scored, function(x) nrow(x) > 0)]
-  if(length(scored) == 0) return(z[[1]])
-  
+  # Check if we have any data left
+  scored = scored[!sapply(scored, is.null)]
+  if(length(scored) == 0){
+    warning("No rewiring events found, returning NULL")
+    return(NULL)
+  }
   
   # Merge all data frames
-  s = do.call('rbind', scored)
+  scored_final = do.call('rbind', scored)
+  rownames(scored_final) = NULL
   
-  # Kinase family data
-  s$pwm_fam = NA
-  if(model.data != 'hconf-fam'){
-    kin2fam = readRDS( file.path(BASE_DIR, 'kin2fam.rds'))
-    tpwm = gsub('-ST|-Y', '', s$pwm)
-    ind = tpwm %in% names(kin2fam)
-    s$pwm_fam[ind] = kin2fam[tpwm[ind]]
+  scored_final = scored_final[order(scored_final$prob, decreasing=T),]
+  attr(scored_final, 'model.data') = model.data
+  
+  if(display.results) results2html(scored_final)
+  
+  # Remove useless columns, reset attributes and return
+  cat(sprintf('\rdone | analysis complete with a total of %s predicted rewiring events\a\n', nrow(scored_final)))
+  scored_final = scored_final[,!names(scored_final) %in% c('ref_aa', 'alt_aa', 'mut_pos')]
+  attr(scored_final, 'model.data') = model.data
+  
+  return(scored_final)
+}
+
+
+
+#' Score phosphosites using MIMP models (without mutation information)
+#' 
+#' @param psites phosphorylation data, see \code{?mimp} for details
+#' @param seqs sequence data, see \code{?mimp} for details
+#' @param model.data MIMP model used, see \code{?mimp} for details
+#' @param posterior_thresh posterior probability threshold that the score belongs to the foreground distribution of the kinase, probabilities below this value are discarded (default 0.8)
+#' @param intermediate if TRUE intermediate MSS scores and likelihoods are reported (default FALSE)
+#' @param kinases vector of kinases used for the scoring (e.g. c("AURKB", "CDK2")), if this isn't provided all kinases will be used .
+#' 
+#' @export
+#' @return
+#' The data is returned in a \code{data.frame} with the following columns:
+#' \item{gene}{Gene with the rewiring event}
+#' \item{pos}{Position of the phosphosite}
+#' \item{wt}{Sequence of the wildtype phosphosite}
+#' \item{score_wt}{(intermediate value) matrix similarity score of sequence}
+#' \item{l.wt.fg}{(intermediate value) likelihood of score given foreground distribution}
+#' \item{l.wt.bg}{(intermediate value) likelihood of score given background distribution}
+#' \item{post.wt.fg}{posterior probability of score in foreground distribution}
+#' \item{post.wt.bg}{posterior probability of score in background distribution}
+#' \item{pwm}{Name of the predicted kinase}
+#' \item{pwm_fam}{Family/subfamily of the predicted kinase. If a kinase subfamily is available the family and subfamily will be seprated by an underscore e.g. "DMPK_ROCK". If no subfamily is available, only the family is shown e.g. "GSK"}
+#' 
+#' @examples
+#' # Get the path to example phosphorylation data 
+#' psites.file = system.file("extdata", "ps_data.txt", package = "rmimp")
+#' 
+#' # Get the path to example FASTA sequence data 
+#' seq.file = system.file("extdata", "sequence_data.txt", package = "rmimp")
+#' 
+#' # Run for all kinases
+#' results_all = scoreWtOnly(psites.file, seq.file)
+#' 
+#' # Run for select kinases
+#' results_select = scoreWtOnly(psites.file, seq.file, kinases=c("AURKB", "CDK2"))
+scoreWtOnly <- function(psites, seqs, model.data='hconf', posterior_thresh=0.8, intermediate=F, kinases){
+  
+  # Read data
+  seqdata = .readSequenceData(seqs)
+  pd = .readPsiteData(psites, seqdata)
+  
+  # Get flanking sequence
+  pd$wt = flankingSequence(seqdata[pd$gene], pd$pos, flank)
+  seqdata = seqdata[names(seqdata) %in% pd$gene]
+  
+  # If we have nothing left, throw a warning and return NULL
+  if(nrow(pd) == 0 | length(seqdata) == 0){
+    warning('No phosphorylation or sequence data remaining after filtering!')
+    return(NULL)
   }
   
+  # Ensure psite positions map to an S, T or Y
+  .validatePsitesSTY(pd, seqdata)
   
-#   s$effect = 'gain'
-#   s$effect[s$ploss > prob.thresh] = 'loss'
+  # Get data 
+  cat('\r.... | loading specificity models')
+  mdata = readRDS(.getModelDataPath(model.data)$path)
+  cat('\rdone\n')
   
+  # If we're missing kinase names
+  if(missing(kinases)) kinases = names(mdata)
   
-  s = s[order(s$prob, decreasing=T),]
-  attr(s, 'model.data') = model.data
+  # Throw error if invalid kinase names
+  kinases = intersect(kinases, names(mdata))
+  if(length(kinases) == 0) 
+    stop(sprintf('Invalid kinase names. Please choose from the following: %s', 
+                 paste(names(mdata), collapse=',')))
   
-  if(display.results) results2html(s)
-  
-  writeLines('Analysis complete!')
-  rownames(s) = NULL
-  
-  
-  s = s[,!names(s) %in% c('ref_aa', 'alt_aa', 'mut_pos')]
-  attr(s, 'model.data') = model.data
-  return(s)
-}
-
-#' Helper function for \code{dohtml}
-#'
-#' Adds colors for mutants at distance
-#'
-#' @param s Data frame resulting from mimp call.
-#' @param dist Distance of mutation.
-#' 
-#' @keywords helper mimp
-.htmlSeq <- function(s, dist){
-  s = strsplit(s,'')[[1]]
-  if(dist != 0) s[8] = sprintf('<a class="psite">%s</a>', s[8])
-  p = 8 + dist
-  s[p] = sprintf('<a class="mut">%s</a>', s[p])
-  paste0(s, collapse='')
-}
-
-#' Helper function for \code{results2html}
-#'
-#' @param x Data frame resulting from mimp call.
-#' @param LOGO_DIR Directory containing sequence logo images.
-#' 
-#' @keywords display mimp
-#' @export
-dohtml <- function(x, LOGO_DIR, HL_DIR){
-  x = unfactor(x)
-  x$score_wt = signif(x$score_wt, 3)
-  x$score_mt = signif(x$score_mt, 3)
-  x$log_ratio = signif(x$log_ratio, 3)
-  x$prob = signif(x$prob, 3)
-  
-  
-  x$log_ratio[is.na(x$log_ratio)] = '-'
-  
-  #x$pwm = gsub('-', '_', x$pwm)
-  
-  cnt = as.list( table(x$effect) )
-  n_gain = ifelse( is.null( cnt[['gain']] ), 0, cnt[['gain']])
-  n_loss = ifelse( is.null( cnt[['loss']] ), 0, cnt[['loss']])
-  n_mut = nrow(unique(x[,c('gene', 'mut')]))
-  
-  lines = sapply(1:nrow(x), function(i){
-    r = x[i,]
-    d = r$mut_dist
-    seq = sprintf('%s<br>%s', .htmlSeq(r$wt, d), .htmlSeq(r$mt, d))
-    scr = sprintf('%s<br>%s', r$score_wt, r$score_mt)
+  # Score!
+  scored = lapply(1:length(kinases), function(i){
+    kin = kinases[i]
+    # Processing PWM i
+    obj = mdata[[kin]]
+    # Print msg
+    perc = round((i/length(kinases))*100)
+    cat(sprintf('\r%3d%% | scoring sequences', perc))
     
-    logo = file.path(LOGO_DIR, paste0(r$pwm, '.svg'))
-    hl = file.path(HL_DIR, paste0(r$mut_dist, '.svg'))
-    t = sprintf('<a class="hide name">%s</a>
-                <img style="background: url(%s) no-repeat;"
-                src="%s" class="logo" alt="%s" />', 
-                r$pwm, normalizePath(hl),  normalizePath(logo), r$pwm)
+    # PWM scores
+    pwm_scores = mss(pd$wt, obj$pwm)
     
-    if(r$effect == 'loss'){
-      eff = '<a class="loss">Loss</a>'
-    }else{
-      eff = '<a class="gain">Gain</a>'
-    }
+    # Get posteriors
+    post = pRewiringPosterior(wt.scores = pwm_scores,
+                              fg.params = obj$fg.params, 
+                              bg.params = obj$bg.params)
     
-    gene = sprintf('<a target="_blank" class="gene-link" href="http://www.genecards.org/cgi-bin/carddisp.pl?gene=%s">%s</a>', r$gene, r$gene)
+    # Attach mss score too
+    post = cbind(mss=pwm_scores, post)
+    # Set posteriors that have NA (ST vs Y) to -1 for filtering
+    post$post.wt.fg[is.na(post$post.wt.fg)] = -1
     
-    # sub - _ logos
-    sprintf('<tr> <td class="gene-name">%s</td>
-            <td class="psite-pos">%s</td>
-            <td class="mut-abbr">%s</td>
-            <td class="mut-dist">%s</td>
-            <td class="sequence">%s</td>
-            <td class="wt-score">%s</td>
-            <td class="mt-score">%s</td>
-            <td class="prob">%s</td>
-            <td class="log-ratio">%s</td>
-            <td class="effect">%s</td>
-            <td class="seq-logo">%s</td>
-            </tr>', 
-            r$gene, r$psite_pos, r$mut, r$mut_dist, seq, r$score_wt, r$score_mt, r$prob, r$log_ratio, eff, t)
+    # Pick only those that pass the threshold
+    ind = post$post.wt.fg >= posterior_thresh
     
+    # Bind with phosphosite information
+    z = cbind(pd[ind,], post[ind,])
+    if(nrow(z) == 0) return(NULL)
+    
+    z$pwm = obj$name
+    z$pwm_fam = obj$family
+    z
   })
   
-  tt = '<div id="%s" style="display:none">%s</div>'
-  lines = append(lines,
-                 c(sprintf(fmt=tt, 'n_mut', n_mut),
-                   sprintf(fmt=tt, 'n_gain', n_gain),
-                   sprintf(fmt=tt, 'n_loss', n_loss)))
-  return(lines)
+  cat('\rdone\n')
+  
+  # Remove null objects
+  scored = scored[!sapply(scored, is.null)]
+  if(length(scored) == 0) return(NULL)
+  
+  # Rbind everything
+  final = do.call(rbind, scored)
+  rownames(final) = NULL
+  
+  # Keep intermediates?
+  if(!intermediate) final = final[,!names(final) %in% c('mss', 'l.wt.fg', 'l.wt.bg')]
+  
+  final
 }
 
-#' Display MIMP results interactively in browser
-#'
-#' @param x Data frame resulting from mimp call.
-#' @param max.rows If data contains more rows than this value, results won't be displayed.
-#' 
-#' @keywords display mimp
-#' @export
-#' 
-results2html <- function(x, max.rows=5000){
-  if(nrow(x) > max.rows){
-    warning(sprintf('Rows of resulting data exceeds %s and cannot be displayed', max.rows))
-    return(1)
-  }
-  #BASE_DIR = system.file("extdata", "", package = "rmimp")
-  
-  model.data = attr(x, 'model.data')
-  if(is.null(model.data)) stop('Input data must be generated using the mimp function. Please try again.')
-  z = c('hconf'='logos', 'hconf-fam'='logos_fam', 'lconf'='logos_newman')
-  
-  LOGO_DIR = file.path(BASE_DIR, 'html', 'images', z[model.data])
-  HL_DIR = file.path(BASE_DIR, 'html', 'images', 'highlight')
-  lines = dohtml(x, LOGO_DIR, HL_DIR)
-  save = file.path(BASE_DIR, 'html', 'MIMP_results.html')
-  zz <- file(save,"w")
-  tt = readLines( file.path(BASE_DIR, 'html', 'index.html'))
-  ind = grep('<DATA>', tt)
-  writeLines(tt[1: (ind-1)],con=zz,sep="\n")
-  writeLines(lines,con=zz,sep="\n")
-  writeLines(tt[(ind+1): length(tt)],con=zz,sep="\n")
-  close(zz)
-  
-  browseURL(save)
-}
-
-
-#' Read fasta file as list (from seqinr package)
-#'
-#' @param file file containing fasta sequences
-#' 
-#' @keywords fasta sequence
-#' 
-.read.fasta = function (file, 
-                        seqtype = c("DNA", "AA"), as.string = FALSE, forceDNAtolower = TRUE, 
-                        set.attributes = TRUE, legacy.mode = TRUE, seqonly = FALSE, 
-                        strip.desc = FALSE, bfa = FALSE, sizeof.longlong = .Machine$sizeof.longlong, 
-                        endian = .Platform$endian, apply.mask = TRUE) 
-{
-  seqtype <- match.arg(seqtype)
-  if (!bfa) {
-    lines <- readLines(file)
-    if (legacy.mode) {
-      comments <- grep("^;", lines)
-      if (length(comments) > 0) 
-        lines <- lines[-comments]
-    }
-    ind <- which(substr(lines, 1L, 1L) == ">")
-    nseq <- length(ind)
-    if (nseq == 0) {
-      stop("no line starting with a > character found")
-    }
-    start <- ind + 1
-    end <- ind - 1
-    end <- c(end[-1], length(lines))
-    sequences <- lapply(seq_len(nseq), function(i) paste(lines[start[i]:end[i]], 
-                                                         collapse = ""))
-    if (seqonly) 
-      return(sequences)
-    nomseq <- lapply(seq_len(nseq), function(i) {
-      firstword <- strsplit(lines[ind[i]], " ")[[1]][1]
-      substr(firstword, 2, nchar(firstword))
-    })
-    if (seqtype == "DNA") {
-      if (forceDNAtolower) {
-        sequences <- as.list(tolower(sequences))
-      }
-    }
-    if (as.string == FALSE) 
-      sequences <- lapply(sequences, s2c)
-    if (set.attributes) {
-      for (i in seq_len(nseq)) {
-        Annot <- lines[ind[i]]
-        if (strip.desc) 
-          Annot <- substr(Annot, 2L, nchar(Annot))
-        attributes(sequences[[i]]) <- list(name = nomseq[[i]], 
-                                           Annot = Annot, class = switch(seqtype, AA = "SeqFastaAA", 
-                                                                         DNA = "SeqFastadna"))
-      }
-    }
-    names(sequences) <- nomseq
-    return(sequences)
-  }
-  if (bfa) {
-    if (seqtype != "DNA") 
-      stop("binary fasta file available for DNA sequences only")
-    mycon <- file(file, open = "rb")
-    r2s <- words(4)
-    readOneBFARecord <- function(con, sizeof.longlong, endian, 
-                                 apply.mask) {
-      len <- readBin(con, n = 1, what = "int", endian = endian)
-      if (length(len) == 0) 
-        return(NULL)
-      name <- readBin(con, n = 1, what = "character", endian = endian)
-      ori_len <- readBin(con, n = 1, what = "int", endian = endian)
-      len <- readBin(con, n = 1, what = "int", endian = endian)
-      seq <- readBin(con, n = len * sizeof.longlong, what = "raw", 
-                     size = 1, endian = endian)
-      mask <- readBin(con, n = len * sizeof.longlong, what = "raw", 
-                      size = 1, endian = endian)
-      if (endian == "little") {
-        neword <- sizeof.longlong:1 + rep(seq(0, (len - 
-                                                    1) * sizeof.longlong, by = sizeof.longlong), 
-                                          each = sizeof.longlong)
-        seq <- seq[neword]
-        mask <- mask[neword]
-      }
-      seq4 <- c2s(r2s[as.integer(seq) + 1])
-      seq4 <- substr(seq4, 1, ori_len)
-      if (apply.mask) {
-        mask4 <- c2s(r2s[as.integer(mask) + 1])
-        mask4 <- substr(mask4, 1, ori_len)
-        npos <- gregexpr("a", mask4, fixed = TRUE)[[1]]
-        for (i in npos) substr(seq4, i, i + 1) <- "n"
-      }
-      return(list(seq = seq4, name = name))
-    }
-    sequences <- vector(mode = "list")
-    nomseq <- vector(mode = "list")
-    i <- 1
-    repeat {
-      res <- readOneBFARecord(mycon, sizeof.longlong, endian, 
-                              apply.mask)
-      if (is.null(res)) 
-        break
-      sequences[[i]] <- res$seq
-      nomseq[[i]] <- res$name
-      i <- i + 1
-    }
-    close(mycon)
-    nseq <- length(sequences)
-    if (seqonly) 
-      return(sequences)
-    if (as.string == FALSE) 
-      sequences <- lapply(sequences, s2c)
-    if (set.attributes) {
-      for (i in seq_len(nseq)) {
-        if (!strip.desc) 
-          Annot <- c2s(c(">", nomseq[[i]]))
-        attributes(sequences[[i]]) <- list(name = nomseq[[i]], 
-                                           Annot = Annot, class = "SeqFastadna")
-      }
-    }
-    names(sequences) <- nomseq
-    return(sequences)
-  }
-}
