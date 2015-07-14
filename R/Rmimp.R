@@ -385,7 +385,7 @@ mimp <- function(muts, seqs, psites=NULL, prob.thresh=0.5, log2.thresh=1, displa
 
 
 
-#' Score phosphosites using MIMP models (without mutation information)
+#' Compute posterior probability of wild type phosphosites for kinases 
 #' 
 #' @param psites phosphorylation data, see \code{?mimp} for details
 #' @param seqs sequence data, see \code{?mimp} for details
@@ -421,7 +421,7 @@ mimp <- function(muts, seqs, psites=NULL, prob.thresh=0.5, log2.thresh=1, displa
 #' 
 #' # Run for select kinases
 #' results_select = scoreWtOnly(psites.file, seq.file, kinases=c("AURKB", "CDK2"))
-scoreWtOnly <- function(psites, seqs, model.data='hconf', posterior_thresh=0.8, intermediate=F, kinases){
+predictKinasePhosphosites <- function(psites, seqs, model.data='hconf', posterior_thresh=0.8, intermediate=F, kinases){
   flank = 7
   # Read data
   seqdata = .readSequenceData(seqs)
