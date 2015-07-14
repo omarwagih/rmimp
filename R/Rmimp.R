@@ -409,7 +409,7 @@ mimp <- function(muts, seqs, psites=NULL, prob.thresh=0.5, log2.thresh=1, displa
 #' # Run for select kinases
 #' results_select = scoreWtOnly(psites.file, seq.file, kinases=c("AURKB", "CDK2"))
 scoreWtOnly <- function(psites, seqs, model.data='hconf', posterior_thresh=0.8, intermediate=F, kinases){
-  
+  flank = 7
   # Read data
   seqdata = .readSequenceData(seqs)
   pd = .readPsiteData(psites, seqdata)
