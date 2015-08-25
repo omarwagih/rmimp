@@ -20,10 +20,12 @@
 #'
 #' @param x Data frame resulting from mimp call.
 #' @param LOGO_DIR Directory containing sequence logo images.
+#' @param HL_DIR Directory containing overlays
+#' @param .webserver Request coming from webserver?
 #' 
 #' @keywords display mimp
 #' @export
-dohtml <- function(x, LOGO_DIR, HL_DIR){
+dohtml <- function(x, LOGO_DIR, HL_DIR, .webserver=F){
   x = unfactor(x)
   x$score_wt = signif(x$score_wt, 3)
   x$score_mt = signif(x$score_mt, 3)
@@ -42,7 +44,8 @@ dohtml <- function(x, LOGO_DIR, HL_DIR){
   n_loss = ifelse( is.null( cnt[['loss']] ), 0, cnt[['loss']])
   n_mut = nrow(unique(x[,c('gene', 'mut')]))
   
-  have.logos = file.exists(LOGO_DIR)
+  have.logos = file.exists(LOGO_DIR) | .webserver
+  
   lines = sapply(1:nrow(x), function(i){
     r = x[i,]
     d = r$mut_dist

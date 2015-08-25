@@ -4,12 +4,16 @@
 \alias{dohtml}
 \title{Helper function for \code{results2html}}
 \usage{
-dohtml(x, LOGO_DIR, HL_DIR)
+dohtml(x, LOGO_DIR, HL_DIR, .webserver = F)
 }
 \arguments{
 \item{x}{Data frame resulting from mimp call.}
 
 \item{LOGO_DIR}{Directory containing sequence logo images.}
+
+\item{HL_DIR}{Directory containing overlays}
+
+\item{.webserver}{Request coming from webserver?}
 }
 \description{
 Helper function for \code{results2html}

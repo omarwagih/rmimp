@@ -3,7 +3,7 @@ Type: Package
 Title: Predicting the impact of mutations on kinase-substrate
     phosphorylation
 Version: 1.1
-Date: 2015-07-14
+Date: 2015-08-25
 Author: Omar Wagih
 Maintainer: Omar Wagih <wagih@ebi.ac.uk>
 Description: MIMP is a machine learning method that predicts the impact of missense single-nucleotide variants (SNVs) on kinase-substrate interactions. MIMP analyzes kinase sequence specificities and predicts whether SNVs disrupt existing phosphorylation sites or create new sites. This helps discover mutations that modify protein function by altering kinase networks and provides insight into disease biology and therapy development.
