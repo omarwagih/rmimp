@@ -188,6 +188,7 @@
   if(n.wrong > 0){
     n = pmin(10, n.wrong)
     wrong.mut = wrong.mut[1:n]
+    wr = muts[wrong.mut,]
     wr = sprintf('%s: expected %s at %s found %s', wr$gene, wr$ref_aa, wr$mut_pos, mut.aa[wrong.mut])
     warning(sprintf('The reference amino acid for %s mutation(s) do not correspond to the amino acid in the sequence:\n%s',
                     n.wrong, paste0(wr, collapse='\n'),
