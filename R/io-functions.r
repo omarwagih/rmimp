@@ -124,10 +124,17 @@
     
     pd = lapply(names(sd_sp), function(n){
       ind = grep('[STY]', sd_sp[[n]])
+      
+      # Skip if phosphorylation sites are not found
+      if (identical(ind, integer(0))) {
+        warning(sprintf("%s gene is skipped because it has no phosphorylation sites.", n))
+        return(NULL)
+      }
+      
       data.frame(gene=n, pos=ind, stringsAsFactors=F)
     })
-    pd = do.call(rbind, pd)
     
+    pd = do.call(rbind, pd)
   }
   
   # Validate p-site data
