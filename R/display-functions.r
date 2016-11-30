@@ -6,7 +6,7 @@
 #' @param s Data frame resulting from mimp call.
 #' @param dist Distance of mutation.
 #' 
-#' @keywords helper mimp
+#' @keywords internal helper mimp
 .htmlSeq <- function(s, dist){
   s = strsplit(s,'')[[1]]
   if(dist != 0) s[8] = sprintf('<a class="psite">%s</a>', s[8])
@@ -23,8 +23,8 @@
 #' @param HL_DIR Directory containing overlays
 #' @param .webserver Request coming from webserver?
 #' 
-#' @keywords display mimp
-#' @export
+#' @keywords internal display mimp
+#' 
 dohtml <- function(x, LOGO_DIR, HL_DIR, .webserver=F){
   x = unfactor(x)
   x$score_wt = signif(x$score_wt, 3)

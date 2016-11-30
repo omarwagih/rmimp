@@ -1,16 +1,22 @@
 BASE_DIR = system.file("extdata", "", package = "rmimp")
 
+
+# require(GenomicRanges)
+# require(data.table)
+# require(Biostrings)
+# require(parallel)
+# 
 # if(T){
-#   setwd('~/Development/mimp/')
+#   setwd('~/Development/rmimp/')
 #   source('R/display-functions.r')
 #   source('R/io-functions.r')
 #   source('R/pwm-functions.r')
-#   BASE_DIR = '~/Development/mimp/inst/extdata/'
+#   BASE_DIR = '~/Development/rmimp/inst/extdata/'
 #   writeLines('Warning: remove base dir')
 # }
 
 # Current version
-.MIMP_VERSION = '1.1'
+.MIMP_VERSION = '1.2'
 
 # This message appears on library or require call of package
 .onAttach <- function(lib, pkg, ...) {
@@ -24,8 +30,8 @@ Wagih O, Reimand J, Bader GD (2015). MIMP: predicting the impact of mutations on
 #' Converts all columns of a data frame of class factor to character
 #'
 #' @param string String to be manipulated
-#' @keywords factor character
-#' @export
+#' @keywords internal factor character
+#' 
 #' @examples
 #' unfactor( data.frame(x=c('A', 'B')) )
 unfactor <- function(df){
@@ -44,9 +50,9 @@ unfactor <- function(df){
 #'    indices from \code{inds} are assumed to all be from the same sequence. 
 #' @param inds Numerical vector of positions corresponding to the sequences provided in \code{seqs}. 
 #' @param flank Value indicating the number of characters to extract, before and after an index
-#' @param empty.char Character used to replace out of bound flanking sequences
-#' @keywords flank sequence
-#' @export
+#' @param empty_char Character used to replace out of bound flanking sequences
+#' @keywords internal flank sequence
+#' 
 #' @examples
 #' # One sequence and one index. Central character is 'B'
 #' flankingSequence(seqs='ABC', inds=2, flank=1)
@@ -54,12 +60,12 @@ unfactor <- function(df){
 #' flankingSequence(seqs='ABC', inds=2, flank=5)
 #' # An example with multiple sequences and indices
 #' flankingSequence(seqs=c('ABC', 'XYZ'), inds=c(2, 1), flank=1)
-flankingSequence <- function(seqs, inds, flank=7, empty.char='-'){
+flankingSequence <- function(seqs, inds, flank=7, empty_char='-'){
   if(length(seqs) == 1 & length(inds) >= length(seqs)) seqs = rep(seqs, length(inds))
   if(length(seqs) != length(inds)) stop('Length of sequences must be equal to length of positions')
   
-  border = paste0(rep(empty.char, flank), collapse="")
-  seqs = sapply(seqs, function(s) paste0(border,s,border))
+  border = paste0(rep(empty_char, flank), collapse="")
+  seqs = paste0(border, unlist(seqs, F, F), border)
   substr(seqs, inds, inds+(flank*2))
 }
 
@@ -77,28 +83,51 @@ flankingSequence <- function(seqs, inds, flank=7, empty.char='-'){
 #'    protein name. Each entry contains the collapsed sequence.
 #' @param flank Number of amino acids flanking the psite to be considered
 #' 
-#' @keywords psnv psites mutation snp
-#' @export
+#' @keywords internal psnv psites mutation snp
+#' 
+#' @importFrom GenomicRanges GRanges findOverlaps subjectHits queryHits
+#' @importFrom IRanges IRanges
 #' @examples
 #' # No examples
 pSNVs <- function(md, pd, seqdata, flank=7){
-  md2 = md; pd2 = pd
-  # Set starts and ends
-  pd2$start = pd2$pos - flank
-  pd2$end = pd2$pos + flank
   
-  # Find overlaps
-  df = subset(merge(pd2, md2), start <= mut_pos & mut_pos <= end)
+  md2 = md; pd2 = pd
+  
+  # Create psite and mutation Granges
+  ps_gr = with(pd, GRanges(gene, IRanges(pos-flank, pos+flank))) 
+  mt_gr = with(md, GRanges(gene, IRanges(mut_pos, mut_pos))) 
+  
+  # Find overlaps of mutations and psites
+  ol = findOverlaps(mt_gr, ps_gr)
+  
+  if(!is.null(seqdata)){
+    # Get flanking sequence from fasta file
+    pd2$mt = pd2$wt = flankingSequence(seqdata[pd2$gene], pd2$pos, flank)
+  }else{
+    # We're processing psp data
+    pd2$mt = pd2$wt = pd2$seq
+  }
+  
+  df = cbind(pd2[subjectHits(ol),], md[queryHits(ol),])
+  df$start = start(ps_gr[subjectHits(ol)])
   df$psite_pos = df$pos
   df$mut_dist = df$mut_pos - df$pos
   
-  df$mt = df$wt = flankingSequence(seqdata[df$gene], df$psite_pos, flank)
+  # Mutate mt sequence
+  df$rel_ind = df$mut_pos - df$start + 1
   
-  # Mutate!
-  rel.ind = df$mut_pos - df$start + 1
-  base::substr(df$mt, rel.ind, rel.ind) = df$alt_aa
+  # Don't keep anything that doesnt match amino acid provided by user and amino acid in sequence
+  seq_ref = base::substr(df$mt, rel_ind, rel_ind)
+  df = subset(df, ref_aa == seq_ref)
   
-  df = df[,!names(df) %in% c('pos', 'start', 'end')]
+  # Mutate
+  base::substr(df$mt, df$rel_ind, df$rel_ind) = df$alt_aa
+  
+  
+  if(is.null(seqdata)) df$gene = sprintf('%s (%s)', df$gene, df$symbol)
+  
+  df = df[,!names(df) %in% c('pos', 'start', 'end', 'gene.1', 'seq', 'symbol', 'rel_ind')]
+  
   df
 }
 
@@ -108,7 +137,7 @@ pSNVs <- function(md, pd, seqdata, flank=7){
 #' 
 #' @param p scores
 #' @param params parameters of GMM from getParams
-#' @export
+#' @keywords internal
 .probPoint = function(p, params) {
   # For all points, get likeli hood for each component
   component_vals = apply(params, 1, function(r){
@@ -128,7 +157,7 @@ pSNVs <- function(md, pd, seqdata, flank=7){
 #' @param bg.params Distribution parameters of GMMs (background). This is precomputed and comes built into mimp.
 #' @param auc AUC of the model. This is precomputed and comes built into mimp.
 #' @param intermediate If TRUE, intermediate likelihoods used to compute ploss and pgain is returned. Otherwise only ploss and pgain returned
-#' @export
+#' @keywords internal
 pRewiringPosterior <- function(wt.scores, mt.scores, fg.params, bg.params, auc=1, intermediate=F){
   
   fg_prior = auc/(1+auc)
@@ -180,8 +209,9 @@ pRewiringPosterior <- function(wt.scores, mt.scores, fg.params, bg.params, auc=1
 #' @param log2.thresh Threshold for the absolute value of log ratio between wild type and mutant scores. Anything less than this value is discarded (default: 1).
 #' @param include.cent If TRUE, gains and losses caused by mutation in the central STY residue are kept
 #' 
-#' @keywords mut psites score snp snv
-computeRewiring <- function(obj, mut_ps, prob.thresh=0.5, log2.thresh=1, include.cent=F, degenerate.pwms=F, .degenerate.groups=c('DE','KR','ILMV')){
+#' @keywords internal mut psites score snp snv
+computeRewiring <- function(obj, mut_ps, prob.thresh=0.5, log2.thresh=1, include.cent=F, 
+                            degenerate.pwms=F, .degenerate.groups=c('DE','KR','ILMV')){
   
   # Score wild type and mutant sequences
   pwm = obj$pwm
@@ -191,25 +221,25 @@ computeRewiring <- function(obj, mut_ps, prob.thresh=0.5, log2.thresh=1, include
   mut_ps$score_wt = mss(mut_ps$wt, pwm)
   mut_ps$score_mt = mss(mut_ps$mt, pwm)
   
+  # Remove cases where wt and mt are NA
+  #mut_ps = mut_ps[!(is.na(mut_ps$score_wt) & is.na(mut_ps$score_mt)),]
+  mut_ps = subset(mut_ps, !is.na(score_wt) & !is.na(score_mt))
+  
+  # Do we have any data left?
+  if(nrow(mut_ps) == 0) return(NULL)
+  
   # Compute the log2 ratio
-  mut_ps$log_ratio <- log2(mut_ps$score_mt/mut_ps$score_wt) 
+  mut_ps$log_ratio = with(mut_ps, log2(score_mt/score_wt) )
   
   # Set the kinase name, family and number of sequences used to build the model
   mut_ps$pwm = obj$name
   mut_ps$pwm_fam = obj$family
   mut_ps$nseqs = attr(obj$pwm, 'nseqs')
   
-  # Remove cases where wt and mt are NA
-  mut_ps = mut_ps[!(is.na(mut_ps$score_wt) & is.na(mut_ps$score_mt)),]
-  
-  # Do we have any data left?
-  if(nrow(mut_ps) == 0) return(NULL)
-  
-  
   res = pRewiringPosterior(mut_ps$score_wt, mut_ps$score_mt, obj$fg.params, obj$bg.params, obj$auc)
   
   # Filter by probability threshold
-  ind = res$ploss >= prob.thresh | res$pgain >= prob.thresh
+  ind = with(res, ploss >= prob.thresh | pgain >= prob.thresh)
   
   # Nothing passes the prob threshold, return NULL
   if(sum(ind) == 0) return(NULL)
@@ -218,7 +248,7 @@ computeRewiring <- function(obj, mut_ps, prob.thresh=0.5, log2.thresh=1, include
   mut_ps = cbind(mut_ps[ind,], res[ind,])
   
   # Filter by log2 ratio, things with NAs have no log ratio
-  mut_ps = mut_ps[is.na(mut_ps$log_ratio) | abs(mut_ps$log_ratio) >= log2.thresh, ]
+  mut_ps = subset(mut_ps, is.na(log_ratio) | abs(log_ratio) >= log2.thresh)
   
   # Nothing passes the log2 ratio, return null
   if(nrow(mut_ps) == 0) return(NULL)
@@ -226,6 +256,7 @@ computeRewiring <- function(obj, mut_ps, prob.thresh=0.5, log2.thresh=1, include
   # Set the effect
   effect = rep('gain', nrow(mut_ps))
   effect[mut_ps$ploss >= prob.thresh] = 'loss'
+  
   # Set prob as maximum of ploss and pgain
   mut_ps$prob = pmax(mut_ps$ploss, mut_ps$pgain)
   mut_ps$effect = effect
@@ -259,8 +290,11 @@ computeRewiring <- function(obj, mut_ps, prob.thresh=0.5, log2.thresh=1, include
 #' }
 #' @param prob.thresh Probability threshold of gains and losses. This value should be between 0.5 and 1.
 #' @param log2.thresh Threshold for the absolute value of log ratio between wild type and mutant scores. Anything less than this value is discarded (default: 1).
+#' @param display.results If TRUE results are visualised in an html document after analysis is complete
 #' @param include.cent If TRUE, gains and losses caused by mutation in the central STY residue are kept. Scores of peptides with a non-STY central residue is given a score of 0 (default: FALSE).
 #' @param model.data Name of specificity model data to use, can be "hconf" : individual experimental kinase specificity models used to scan for rewiring events. For experimental kinase specificity models, grouped by family, set to "hconf-fam". Both are considered high confidence. For lower confidence predicted specificity models , set to "lconf". NOTE: Predicted models are purely speculative and should be used with caution
+#' @param cores Number of cores to use - default is 1. More cores will speed up computation.
+#' @param kinases Character vector of kinase models to be used - if missing all kinase models are used (default)
 #' 
 #' @return 
 #' The data is returned in a \code{data.frame} with the following columns:
@@ -281,6 +315,9 @@ computeRewiring <- function(obj, mut_ps, prob.thresh=0.5, log2.thresh=1, include
 #' 
 #' 
 #' @keywords mimp psites mutation snp snv pwm rewiring phosphorylation kinase
+#' @importFrom parallel mclapply
+#' @importFrom data.table rbindlist
+#' 
 #' @export
 #' @examples
 #' # Get the path to example mutation data 
@@ -298,41 +335,55 @@ computeRewiring <- function(obj, mut_ps, prob.thresh=0.5, log2.thresh=1, include
 #' 
 #' # Show head of results
 #' head(results)
-mimp <- function(muts, seqs, psites=NULL, prob.thresh=0.5, log2.thresh=1, display.results=T, include.cent=F, model.data='hconf'){
+mimp <- function(muts, seqs=NULL, psites=NULL, prob.thresh=0.5, log2.thresh=1, 
+                 display.results=F, include.cent=F, model.data='hconf', cores=1,
+                 kinases){
   
-  # , degenerate.pwms=F, .degenerate.groups=c('DE','KR')
   # Constant - do not change
   flank=7
   
   # Ensure valid thresholds
-  if(!is.numeric(prob.thresh) | prob.thresh > 1 | prob.thresh < 0) stop('Probability threshold "prob.thresh" must be between 0.5 and 1')
+  if(!is.numeric(prob.thresh) | prob.thresh > 1 | prob.thresh < 0) 
+    stop('Probability threshold "prob.thresh" must be between 0.5 and 1')
   
+  # Are we using phosphositeplus sites?
+  use_psp = is.null(seqs)
   # Read in data
-  seqdata = .readSequenceData(seqs)
+  seqdata = NULL
+  if(!use_psp) seqdata = .readSequenceData(seqs)
   md = .readMutationData(muts, seqdata)
   pd = .readPsiteData(psites, seqdata)
   
   # Keep only genes we have data for
   md = md[md$gene %in% pd$gene,]
-  seqdata = seqdata[names(seqdata) %in% pd$gene]
   
-  # Validate that mutations mapp to the correct residue
-  .validateMutationMapping(md, seqdata)
-  
-  # If we have nothing left, throw a warning and return NULL
-  if(nrow(pd) == 0 | nrow(md) == 0 | length(seqdata) == 0){
-    warning('No phosphorylation, mutation or sequence data remaining after filtering!')
-    return(NULL)
+  if(!use_psp){
+    seqdata = seqdata[names(seqdata) %in% pd$gene]
+    
+    # Validate that mutations mapp to the correct residue
+    .validateMutationMapping(md, seqdata)
+    
+    # If we have nothing left, throw a warning and return NULL
+    if(nrow(pd) == 0 | nrow(md) == 0 | length(seqdata) == 0){
+      warning('No phosphorylation, mutation or sequence data remaining after filtering!')
+      return(NULL)
+    }
+    
+    # Ensure psite positions map to an S, T or Y
+    .validatePsitesSTY(pd, seqdata)
+  }else{
+    
+    # We are using phosphositeplus data
+    pd = subset(pd, gene %in% unique(md$gene))
   }
   
-  # Ensure psite positions map to an S, T or Y
-  .validatePsitesSTY(pd, seqdata)
   
   # Get mutations in flanking regions of psites
   mut_psites = pSNVs(md, pd, seqdata, flank)
   
+  
   # Are we keeping central residues?
-  if(!include.cent) mut_psites = mut_psites[mut_psites$mut_dist != 0,]
+  if(!include.cent) mut_psites = subset(mut_psites, mut_dist != 0)
   
   # If no mutations map, throw warning and return NULL
   if(nrow(mut_psites) == 0){
@@ -347,13 +398,29 @@ mimp <- function(muts, seqs, psites=NULL, prob.thresh=0.5, log2.thresh=1, displa
   mdata = readRDS(mpath$path)
   cat('\rdone\n')
   
-  scored = lapply(1:length(mdata), function(i){
+  # If we're missing kinase names
+  if(missing(kinases)) kinases = names(mdata)
+  
+  # Throw error if invalid kinase names
+  kinases = intersect(kinases, names(mdata))
+  if(length(kinases) == 0) 
+    stop(sprintf('Invalid kinase names. Please choose from the following: %s', 
+                 paste(names(mdata), collapse=',')))
+  
+  mdata = mdata[kinases]
+  
+  # Print for multicore
+  if(cores > 1) cat('\r.... | predicting kinase rewiring events')
+  
+  scored = mclapply(X=1:length(mdata), mc.cores = cores, FUN=function(i){
     # Processing PWM i
     obj = mdata[[i]]
     
     # Print msg
-    perc = round((i/length(mdata))*100)
-    cat(sprintf('\r%3d%% | predicting kinase rewiring events', perc))
+    if(cores == 1){
+      perc = round((i/length(mdata))*100)
+      cat(sprintf('\r%3d%% | predicting kinase rewiring events', perc))
+    }
     
     computeRewiring(obj, mut_psites, prob.thresh, log2.thresh, include.cent)
   })
@@ -367,10 +434,10 @@ mimp <- function(muts, seqs, psites=NULL, prob.thresh=0.5, log2.thresh=1, displa
   }
   
   # Merge all data frames
-  scored_final = do.call('rbind', scored)
-  rownames(scored_final) = NULL
+  scored_final = rbindlist(scored)
+  scored_final = scored_final[order(prob, decreasing=T),]
+  scored_final = as.data.frame(scored_final)
   
-  scored_final = scored_final[order(scored_final$prob, decreasing=T),]
   attr(scored_final, 'model.data') = model.data
   
   if(display.results) results2html(scored_final)
@@ -407,6 +474,8 @@ mimp <- function(muts, seqs, psites=NULL, prob.thresh=0.5, log2.thresh=1, displa
 #' \item{post.wt.bg}{posterior probability of score in background distribution}
 #' \item{pwm}{Name of the predicted kinase}
 #' \item{pwm_fam}{Family/subfamily of the predicted kinase. If a kinase subfamily is available the family and subfamily will be seprated by an underscore e.g. "DMPK_ROCK". If no subfamily is available, only the family is shown e.g. "GSK"}
+#' 
+#' @importFrom data.table rbindlist 
 #' 
 #' If no predictions were made, function returns NULL
 #' @examples
@@ -495,7 +564,7 @@ predictKinasePhosphosites <- function(psites, seqs, model.data='hconf', posterio
   if(length(scored) == 0) return(NULL)
   
   # Rbind everything
-  final = do.call(rbind, scored)
+  final = as.data.frame( rbindlist(scored) )
   rownames(final) = NULL
   
   # Keep intermediates?
