@@ -38,15 +38,15 @@ Compute posterior probability of wild type phosphosites for kinases
 }
 \examples{
 # Get the path to example phosphorylation data 
-psites.file = system.file("extdata", "ps_data.txt", package = "rmimp")
+psite.file = system.file("extdata", "sample_phosphosites.tab", package = "rmimp")
 
 # Get the path to example FASTA sequence data 
-seq.file = system.file("extdata", "sequence_data.txt", package = "rmimp")
+seq.file = system.file("extdata", "sample_seqs.fa", package = "rmimp")
 
 # Run for all kinases
-results_all = predictKinasePhosphosites(psites.file, seq.file)
+results_all = predictKinasePhosphosites(psite.file, seq.file)
 
 # Run for select kinases
-results_select = predictKinasePhosphosites(psites.file, seq.file, kinases=c("AURKB", "CDK2"))
+results_select = predictKinasePhosphosites(psite.file, seq.file, kinases=c("AURKB", "CDK2"))
 }
 

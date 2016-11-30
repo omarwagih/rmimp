@@ -31,35 +31,86 @@ library("rmimp")
 ## Running MIMP on sample data:
 
 To start using MIMP, try loading paths to the sample data, which come with the package:
+
 ```r
 # Get the path to example mutation data 
-mut.file = system.file("extdata", "mutation_data.txt", package = "rmimp")
+mut.file = system.file("extdata", "sample_muts.tab", package = "rmimp")
 
-# Get the path to example FASTA sequence data 
-seq.file = system.file("extdata", "sequence_data.txt", package = "rmimp")
+# Get the path to example FASTA sequence file 
+seq.file = system.file("extdata", "sample_seqs.fa", package = "rmimp")
 
+# Get the path to example FASTA sequence file 
+psite.file = system.file("extdata", "sample_phosphosites.tab", package = "rmimp")
 ```
 
-Take a look at the sample data. Try running the following:
 
-```r
-browseURL(mut.file)
-browseURL(seq.file)
+The mutation file contains the following lines:
+
+```
+TP53 R282W
+TP53 R248P
+TP53 W146S
+CTNNB1 S33C
+CTNNB1 S37F
 ```
 
-Now to start the analysis, simply run the `mimp` function on these files:
+
+The phophosite file contains the following lines:
+
+```
+TP53	284
+TP53	215
+CTNNB1	33
+```
+
+
+To start the analysis, simply run the `mimp` function on these files:
 
 ```r
 # Run rewiring analysis
-results = mimp(mut.file, seq.file, display.results=TRUE)
+results = mimp(mut.file, seq.file, psite.file, display.results=TRUE)
 ```
 
 The output is stored in the `results` variable and should show up in your browser. To suppress browser display, set `display.results=FALSE`
 
 If you'd like to redisplay the results in your browser at a later time, run the following:
+
 ```r
 results2html(results)
 ```
+
+## Running MIMP without phosphosite data:
+
+If you don't pass phosphosite data to the function call, MIMP will use positions of all S, T and Y residues in your FASTA file as potential phosphosites.
+
+```r
+# Run rewiring analysis
+results2 = mimp(mut.file, seq.file, display.results=TRUE)
+```
+
+
+## Running MIMP without phosphosite or sequence data:
+If you pass only a mutation file to the function call, MIMP will use positions of experimentally identified phosphosites from [PhosphoSitePlus](phosphosite.org), and their corresponding sequences. PhosphoSitePlus uses UniProt accessions as identifiers, so for this please make sure the IDs used in your mutation file are uniprot accessions:
+
+Here's an example using a file with five mutations:
+
+```
+P04637 R282W
+P04637 R248P
+P04637 W146S
+P35222 S33C
+P35222 S37F
+```
+
+
+```r
+# Get the path to example mutation data 
+mut.file.up = system.file("extdata", "sample_muts_uniprot.tab", package = "rmimp")
+
+# run mimp
+results3 = mimp(mut.file.up, display.results = TRUE)
+```
+
 
 ## Documentation
 

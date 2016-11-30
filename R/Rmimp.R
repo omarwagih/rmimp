@@ -117,7 +117,7 @@ pSNVs <- function(md, pd, seqdata, flank=7){
   df$rel_ind = df$mut_pos - df$start + 1
   
   # Don't keep anything that doesnt match amino acid provided by user and amino acid in sequence
-  seq_ref = base::substr(df$mt, rel_ind, rel_ind)
+  seq_ref = base::substr(df$mt, df$rel_ind, df$rel_ind)
   df = subset(df, ref_aa == seq_ref)
   
   # Mutate
@@ -127,7 +127,7 @@ pSNVs <- function(md, pd, seqdata, flank=7){
   if(is.null(seqdata)) df$gene = sprintf('%s (%s)', df$gene, df$symbol)
   
   df = df[,!names(df) %in% c('pos', 'start', 'end', 'gene.1', 'seq', 'symbol', 'rel_ind')]
-  
+  rownames(df) = NULL
   df
 }
 
@@ -282,12 +282,16 @@ computeRewiring <- function(obj, mut_ps, prob.thresh=0.5, log2.thresh=1, include
 #' @param seqs Sequence data file containing protein sequences in FASTA format OR 
 #'  named list of sequences where each list element is the uppercase sequence and the 
 #'  name of each element is that of the protein. Example: list(GENEA="ARNDGH", GENEB="YVRRHS")
+#'  If both sequences and phosphosites are omitted, mimp will use sites from phosphositeplus. 
+#'  This means the IDs in your mutation file must be UniProt accession numbers
 #' @param psites Phosphorylation data file (optional): a space delimited text file OR data frame containing  two columns (1) gene and (1) positions of phosphorylation sites. Example:
 #' \tabular{ll}{
 #'    TP53 \tab 280\cr
 #'    CTNNB1 \tab 29\cr
 #'    CTNNB1 \tab 44\cr
 #' }
+#' If both sequences and phosphosites are omitted, mimp will use sites from phosphositeplus. 
+#' This means the IDs in your mutation file must be UniProt accession numbers
 #' @param prob.thresh Probability threshold of gains and losses. This value should be between 0.5 and 1.
 #' @param log2.thresh Threshold for the absolute value of log ratio between wild type and mutant scores. Anything less than this value is discarded (default: 1).
 #' @param display.results If TRUE results are visualised in an html document after analysis is complete
@@ -320,18 +324,17 @@ computeRewiring <- function(obj, mut_ps, prob.thresh=0.5, log2.thresh=1, include
 #' 
 #' @export
 #' @examples
+#' # Get the path to example phosphorylation data 
+#' psite.file = system.file("extdata", "sample_phosphosites.tab", package = "rmimp")
+#' 
 #' # Get the path to example mutation data 
-#' mut.file = system.file("extdata", "mutation_data.txt", package = "rmimp")
+#' mut.file = system.file("extdata", "sample_muts.tab", package = "rmimp")
 #' 
 #' # Get the path to example FASTA sequence data 
-#' seq.file = system.file("extdata", "sequence_data.txt", package = "rmimp")
-#' 
-#' # View the files in a text editor
-#' browseURL(mut.file)
-#' browseURL(seq.file)
+#' seq.file = system.file("extdata", "sample_seqs.fa", package = "rmimp")
 #' 
 #' # Run rewiring analysis
-#' results = mimp(mut.file, seq.file, display.results=TRUE)
+#' results = mimp(mut.file, seq.file, psite.file, display.results=TRUE)
 #' 
 #' # Show head of results
 #' head(results)
@@ -480,16 +483,16 @@ mimp <- function(muts, seqs=NULL, psites=NULL, prob.thresh=0.5, log2.thresh=1,
 #' If no predictions were made, function returns NULL
 #' @examples
 #' # Get the path to example phosphorylation data 
-#' psites.file = system.file("extdata", "ps_data.txt", package = "rmimp")
+#' psite.file = system.file("extdata", "sample_phosphosites.tab", package = "rmimp")
 #' 
 #' # Get the path to example FASTA sequence data 
-#' seq.file = system.file("extdata", "sequence_data.txt", package = "rmimp")
+#' seq.file = system.file("extdata", "sample_seqs.fa", package = "rmimp")
 #' 
 #' # Run for all kinases
-#' results_all = predictKinasePhosphosites(psites.file, seq.file)
+#' results_all = predictKinasePhosphosites(psite.file, seq.file)
 #' 
 #' # Run for select kinases
-#' results_select = predictKinasePhosphosites(psites.file, seq.file, kinases=c("AURKB", "CDK2"))
+#' results_select = predictKinasePhosphosites(psite.file, seq.file, kinases=c("AURKB", "CDK2"))
 predictKinasePhosphosites <- function(psites, seqs, model.data='hconf', posterior_thresh=0.8, intermediate=F, kinases){
   flank = 7
   # Read data
