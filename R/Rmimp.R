@@ -85,7 +85,7 @@ flankingSequence <- function(seqs, inds, flank=7, empty_char='-'){
 #' 
 #' @keywords internal psnv psites mutation snp
 #' 
-#' @importFrom GenomicRanges GRanges findOverlaps subjectHits queryHits
+#' @import GenomicRanges
 #' @importFrom IRanges IRanges
 #' @examples
 #' # No examples

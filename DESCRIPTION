@@ -3,7 +3,7 @@ Type: Package
 Title: Predicting the impact of mutations on kinase-substrate
     phosphorylation
 Version: 1.2
-Date: 2016-11-30
+Date: 2017-01-11
 Author: Omar Wagih
 Maintainer: Omar Wagih <wagih@ebi.ac.uk>
 Description: MIMP is a machine learning method that predicts the impact of
