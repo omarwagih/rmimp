@@ -1,11 +1,11 @@
 BASE_DIR = system.file("extdata", "", package = "rmimp")
 
 
-# require(GenomicRanges)
-# require(data.table)
-# require(Biostrings)
-# require(parallel)
-# 
+require(GenomicRanges)
+require(data.table)
+require(Biostrings)
+require(parallel)
+
 # if(T){
 #   setwd('~/Development/rmimp/')
 #   source('R/display-functions.r')
@@ -223,7 +223,7 @@ computeRewiring <- function(obj, mut_ps, prob.thresh=0.5, log2.thresh=1, include
   
   # Remove cases where wt and mt are NA
   #mut_ps = mut_ps[!(is.na(mut_ps$score_wt) & is.na(mut_ps$score_mt)),]
-  mut_ps = subset(mut_ps, !is.na(score_wt) & !is.na(score_mt))
+  mut_ps = subset(mut_ps, !(is.na(score_wt) & is.na(score_mt)) )
   
   # Do we have any data left?
   if(nrow(mut_ps) == 0) return(NULL)
