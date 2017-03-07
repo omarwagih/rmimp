@@ -1,4 +1,4 @@
-setwd('~/Development/mimp/')
+setwd('~/Desktop/rmimp/')
 
 detachPackage <- function(pkg){
   pkg = sprintf("package:%s", pkg)
@@ -39,7 +39,7 @@ build_package <- function(){
   system('R CMD Rd2pdf --no-index --no-preview --force -o build/rmimp_manual.pdf ./')
 #   X = sapply(basename(rm_man), function(from) file.rename(from, file.path('man', from)))
   
-  file.copy('build/rmimp_manual.pdf', '~/Development/mimp_webserver/public/R/generate_data/rmimp_manual.pdf')
+  # file.copy('build/rmimp_manual.pdf', '~/Development/mimp_webserver/public/R/generate_data/rmimp_manual.pdf')
 }
 
 # Build package

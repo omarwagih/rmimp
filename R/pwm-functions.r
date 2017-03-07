@@ -107,17 +107,58 @@ degeneratePWM <- function(pwm, dgroups=c('DE','KR','ILMV','QN','ST')){
 scoreArray <- function(seqs, pwm){
   # Split sequence
   sp = strsplit(seqs, '')
-  
   # Number of positions
   seq.len = length(sp[[1]])
-  
   # Iterate through sequences
   dat = lapply(sp, function(seq){
     # Match sequence to the PWM
     mat = matrix(c(match(seq, rownames(pwm)), 1:seq.len), seq.len, 2)
-    pwm[ mat ]
+    pwm[mat]
   })
   names(dat) = seqs
+  return(dat)
+}
+
+#' Get weight/probability for each amino acid in a sequence 
+#' 
+#' Gets weight/probability for the amino acid at each position of the sequence
+#' as an array.
+#'
+#' @param seqs One or more sequences to be processed
+#' @param pwm Position weight matrix
+#'  
+#' @keywords pwm mss match tfbs
+#' @export
+#' @examples
+#' # No Examples
+scoreArrayRolling <- function(seqs, pwm){
+  # Split sequence
+  sp = strsplit(seqs, '')
+  
+  # Number of positions
+  seq.lens = sapply(sp, length)
+  pwm_ncol = ncol(pwm)
+  repeats = seq.lens - pwm_ncol + 1
+
+  # Iterate through sequences
+  dat = lapply(1:length(sp), function(index){
+    seq <- sp[[index]]
+    if(length(seq) < pwm_ncol) {
+      return(NA)
+    }
+    # print(sprintf("original sequence: %s and total %d repeats", paste0(seq, collapse = ""), repeats[index]))
+    # Generate sequences of ncol(pwm) length
+    ret <- sapply(1:repeats[index], function(i) {
+      currentSeq <- seq[i : (i + pwm_ncol - 1)]
+      # print(sprintf("current sequence: %s", paste0(currentSeq, collapse = "")))
+      # Match sequence to the PWM
+      mat = matrix(c(match(currentSeq, rownames(pwm)), 1:pwm_ncol), pwm_ncol, 2)
+      ret = list(pwm[mat])
+      names(ret) = paste0(currentSeq, collapse = "")
+      return(ret)
+    })
+    return(do.call("cbind", ret))
+  })
   return(dat)
 }
 
@@ -193,6 +234,49 @@ mss <- function(seqs, pwm, na.rm=F, ignore.central=T){
   return(scores)
 }
 
+#' Compute matrix similarity score as described in MATCH algorithm for sh3 domains.
+#' 
+#' Computes matrix similarity score of a PWM with a k-mer.
+#' Score ranges from 0-1, as described in [PMID: 12824369]
+#'
+#' @param seqs Sequences to be scored
+#' @param pwm Position weight matrix
+#'  
+#' @keywords pwm mss match tfbs
+#' @export
+#' @examples
+#' # No Examples
+mssSh3 <- function(seqs, pwm){
+  # Best/worst sequence match
+  oa = scoreArray(bestSequence(pwm), pwm)[[1]]
+  wa = scoreArray(worstSequence(pwm), pwm)[[1]]
+
+  # Info content
+  if(!is.null(attr(pwm, 'match.ic'))) {
+    # If info content is already in pwm matrix, get it directly from the variable
+    IC = attr(pwm, 'match.ic')
+  } else {
+    # Otherwise, calculate the ic
+    IC = apply(pwm, 2, function(col) sum(col * logb(length(AA) * col), na.rm=T))
+  }
+  
+  # Best and worst scores
+  opt.score   = sum( IC * (oa), na.rm=T )
+  worst.score = sum( IC * (wa), na.rm=T )
+  
+  # Score
+  score.arr = scoreArrayRolling(seqs, pwm)
+  score.arr = score.arr[!is.na(score.arr)]
+
+  # Get current score
+  scores = lapply(score.arr, function(sa) {
+    sum <- colSums(sa * IC, na.rm = T)
+    return((sum - worst.score) / (opt.score - worst.score))
+  })
+  names(scores) = seqs
+  
+  return(scores)
+}
 
 #' Given a position weight matrix, find the best matching sequence
 #' 
