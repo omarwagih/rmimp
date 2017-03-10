@@ -26,6 +26,7 @@ exist in the flanking regions of the psite
 \examples{
 # No examples
 }
+\keyword{internal}
 \keyword{mutation}
 \keyword{psites}
 \keyword{psnv}

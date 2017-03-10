@@ -17,5 +17,6 @@ Used in matrix similarity score calculation.
 # No Examples
 }
 \keyword{best}
+\keyword{internal}
 \keyword{pwm}
 

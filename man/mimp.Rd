@@ -4,8 +4,9 @@
 \alias{mimp}
 \title{Predict the impact of single variants on phosphorylation.}
 \usage{
-mimp(muts, seqs, psites = NULL, prob.thresh = 0.5, log2.thresh = 1,
-  display.results = T, include.cent = F, model.data = "hconf")
+mimp(muts, seqs = NULL, psites = NULL, prob.thresh = 0.5,
+  log2.thresh = 1, display.results = F, include.cent = F,
+  model.data = "hconf", cores = 1, kinases)
 }
 \arguments{
 \item{muts}{Mutation data file: a space delimited text file OR data frame containing two columns (1) gene and (1) mutation. 
@@ -25,15 +26,23 @@ name of each element is that of the protein. Example: list(GENEA="ARNDGH", GENEB
    TP53 \tab 280\cr
    CTNNB1 \tab 29\cr
    CTNNB1 \tab 44\cr
-}}
+}
+If both sequences and phosphosites are omitted, mimp will use sites from phosphositeplus. 
+This means the IDs in your mutation file must be UniProt accession numbers}
 
 \item{prob.thresh}{Probability threshold of gains and losses. This value should be between 0.5 and 1.}
 
 \item{log2.thresh}{Threshold for the absolute value of log ratio between wild type and mutant scores. Anything less than this value is discarded (default: 1).}
 
+\item{display.results}{If TRUE results are visualised in an html document after analysis is complete}
+
 \item{include.cent}{If TRUE, gains and losses caused by mutation in the central STY residue are kept. Scores of peptides with a non-STY central residue is given a score of 0 (default: FALSE).}
 
 \item{model.data}{Name of specificity model data to use, can be "hconf" : individual experimental kinase specificity models used to scan for rewiring events. For experimental kinase specificity models, grouped by family, set to "hconf-fam". Both are considered high confidence. For lower confidence predicted specificity models , set to "lconf". NOTE: Predicted models are purely speculative and should be used with caution}
+
+\item{cores}{Number of cores to use - default is 1. More cores will speed up computation.}
+
+\item{kinases}{Character vector of kinase models to be used - if missing all kinase models are used (default)}
 }
 \value{
 The data is returned in a \code{data.frame} with the following columns:
@@ -63,12 +72,11 @@ mut.file = system.file("extdata", "mutation_data.txt", package = "rmimp")
 # Get the path to example FASTA sequence data 
 seq.file = system.file("extdata", "sequence_data.txt", package = "rmimp")
 
-# View the files in a text editor
-browseURL(mut.file)
-browseURL(seq.file)
+# Get the path to example FASTA sequence data 
+seq.file = system.file("extdata", "sample_seqs.fa", package = "rmimp")
 
 # Run rewiring analysis
-results = mimp(mut.file, seq.file, display.results=TRUE)
+results = mimp(mut.file, seq.file, psite.file, display.results=TRUE)
 
 # Show head of results
 head(results)

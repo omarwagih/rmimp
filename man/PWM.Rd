@@ -27,5 +27,6 @@ Makes a position weight matrix given aligned sequences.
 # No examples
 }
 \keyword{construct}
+\keyword{internal}
 \keyword{pwm}
 

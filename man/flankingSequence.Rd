@@ -4,7 +4,7 @@
 \alias{flankingSequence}
 \title{Get flanking sequences of a position.}
 \usage{
-flankingSequence(seqs, inds, flank = 7, empty.char = "-")
+flankingSequence(seqs, inds, flank = 7, empty_char = "-")
 }
 \arguments{
 \item{seqs}{Character vector of sequences. If only one sequence is provided, 
@@ -14,7 +14,7 @@ indices from \code{inds} are assumed to all be from the same sequence.}
 
 \item{flank}{Value indicating the number of characters to extract, before and after an index}
 
-\item{empty.char}{Character used to replace out of bound flanking sequences}
+\item{empty_char}{Character used to replace out of bound flanking sequences}
 }
 \description{
 This function obtains the flanking sequence at one or more position. 
@@ -29,5 +29,6 @@ flankingSequence(seqs='ABC', inds=2, flank=5)
 flankingSequence(seqs=c('ABC', 'XYZ'), inds=c(2, 1), flank=1)
 }
 \keyword{flank}
+\keyword{internal}
 \keyword{sequence}
 

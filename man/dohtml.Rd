@@ -19,5 +19,6 @@ dohtml(x, LOGO_DIR, HL_DIR, .webserver = F)
 Helper function for \code{results2html}
 }
 \keyword{display}
+\keyword{internal}
 \keyword{mimp}
 

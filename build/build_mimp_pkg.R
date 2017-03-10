@@ -1,4 +1,4 @@
-setwd('~/Desktop/rmimp/')
+setwd('~/Development/rmimp/')
 
 detachPackage <- function(pkg){
   pkg = sprintf("package:%s", pkg)
@@ -24,7 +24,13 @@ build_package <- function(){
   newf = file.path('./build', targz)
   # Compile things
   document('./')
-  file.remove(newf)
+  
+  ns = readLines('NAMESPACE')
+  ns = ns[!grepl('data.table', ns)]
+  ns = c(ns, 'importFrom(data.table,rbindlist)', 'importFrom(data.table,fread)')
+  writeLines(ns, 'NAMESPACE')
+  
+  if(file.exists(newf)) file.remove(newf)
   system('R CMD BUILD ./')
   re = file.rename(targz, newf)
   # Install package

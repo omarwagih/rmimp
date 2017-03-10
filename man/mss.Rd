@@ -4,16 +4,16 @@
 \alias{mss}
 \title{Compute matrix similarity score as described in MATCH algorithm}
 \usage{
-mss(seqs, pwm, na.rm = F, ignore.central = T)
+mss(seqs, pwm, na_rm = F, ignore_cent = T)
 }
 \arguments{
 \item{seqs}{Sequences to be scored}
 
 \item{pwm}{Position weight matrix}
 
-\item{na.rm}{Remove NA scores?}
+\item{na_rm}{Remove NA scores?}
 
-\item{ignore.central}{If TRUE, central residue is ignore from scoring.}
+\item{ignore_cent}{If TRUE, central residue is ignore from scoring.}
 }
 \description{
 Computes matrix similarity score of a PWM with a k-mer.
@@ -22,6 +22,7 @@ Score ranges from 0-1, as described in [PMID: 12824369]
 \examples{
 # No Examples
 }
+\keyword{internal}
 \keyword{match}
 \keyword{mss}
 \keyword{pwm}

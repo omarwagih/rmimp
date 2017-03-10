@@ -22,6 +22,7 @@ computeRewiring(obj, mut_ps, prob.thresh = 0.5, log2.thresh = 1,
 \description{
 Score wt and mt sequences for a pwm
 }
+\keyword{internal}
 \keyword{mut}
 \keyword{psites}
 \keyword{score}
