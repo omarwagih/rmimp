@@ -3,20 +3,20 @@ library(parallel)
 library(mclust)
 library(ROCR)
 
-
 require(GenomicRanges)
 require(data.table)
 require(Biostrings)
-require(parallel)
 
-# if(T){
-#   setwd('~/Development/rmimp/')
-#   source('R/display-functions.r')
-#   source('R/io-functions.r')
-#   source('R/pwm-functions.r')
-#   BASE_DIR = '~/Development/rmimp/inst/extdata/'
-#   writeLines('Warning: remove base dir')
-# }
+if(T){
+  # setwd('~/Development/rmimp/')
+  # BASE_DIR = '~/Development/rmimp/inst/extdata/'
+  setwd('~/Desktop/rmimp/')
+  BASE_DIR = '~/Desktop/rmimp/inst/extdata/'
+  source('R/display-functions.r')
+  source('R/io-functions.r')
+  source('R/pwm-functions.r')
+  writeLines('Warning: remove base dir')
+}
 
 # Current version
 .MIMP_VERSION = '1.2'

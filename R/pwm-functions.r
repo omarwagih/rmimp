@@ -93,6 +93,32 @@ degeneratePWM <- function(pwm, dgroups=c('DE','KR','ILMV','QN','ST')){
   .pwm
 }
 
+#' Get weight/probability for each amino acid in a sequence 
+#' 
+#' Gets weight/probability for the amino acid at each position of the sequence
+#' as an array.
+#'
+#' @param seqs One or more sequences to be processed
+#' @param pwm Position weight matrix
+#'  
+#' @keywords pwm mss match tfbs
+#' @export
+#' @examples
+#' # No Examples
+scoreArray <- function(seqs, pwm){
+  # Split sequence
+  sp = strsplit(seqs, '')
+  # Number of positions
+  seq.len = length(sp[[1]])
+  # Iterate through sequences
+  dat = lapply(sp, function(seq){
+    # Match sequence to the PWM
+    mat = matrix(c(match(seq, rownames(pwm)), 1:seq.len), seq.len, 2)
+    pwm[mat]
+  })
+  names(dat) = seqs
+  return(dat)
+}
 
 #' Get weight/probability for each amino acid in a sequence 
 #' 

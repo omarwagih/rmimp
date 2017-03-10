@@ -58,7 +58,7 @@
   
   # Set column names and remove all factors - if any
   names(md)[1:2] = c('gene', 'mut')
-  md = unfactor(md)
+  md = rapply(md, as.character, classes="factor", how="replace")
   
   # 2. Validate mutation data
   # Ensure valid regex for mutations
