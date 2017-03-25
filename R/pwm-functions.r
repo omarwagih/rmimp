@@ -100,33 +100,6 @@ degeneratePWM <- function(pwm, dgroups=c('DE','KR','ILMV','QN','ST')){
 #'
 #' @param seqs One or more sequences to be processed
 #' @param pwm Position weight matrix
-#'  
-#' @keywords pwm mss match tfbs
-#' @export
-#' @examples
-#' # No Examples
-scoreArray <- function(seqs, pwm){
-  # Split sequence
-  sp = strsplit(seqs, '')
-  # Number of positions
-  seq.len = length(sp[[1]])
-  # Iterate through sequences
-  dat = lapply(sp, function(seq){
-    # Match sequence to the PWM
-    mat = matrix(c(match(seq, rownames(pwm)), 1:seq.len), seq.len, 2)
-    pwm[mat]
-  })
-  names(dat) = seqs
-  return(dat)
-}
-
-#' Get weight/probability for each amino acid in a sequence 
-#' 
-#' Gets weight/probability for the amino acid at each position of the sequence
-#' as an array.
-#'
-#' @param seqs One or more sequences to be processed
-#' @param pwm Position weight matrix
 #' @param do_sum If TRUE sum position-based scores per sequence
 #' @param ignore_cent If TRUE, ignore central residue before returning
 #'  
@@ -289,8 +262,8 @@ mss <- function(seqs, pwm, na_rm=F, ignore_cent=T){
 #' # No Examples
 mssSh3 <- function(seqs, pwm){
   # Best/worst sequence match
-  oa = scoreArray(bestSequence(pwm), pwm)[[1]]
-  wa = scoreArray(worstSequence(pwm), pwm)[[1]]
+  oa = scoreArrayFast(bestSequence(pwm), pwm, do_sum = F)[[1]]
+  wa = scoreArrayFast(worstSequence(pwm), pwm, do_sum = F)[[1]]
 
   # Info content
   if(!is.null(attr(pwm, 'match.ic'))) {

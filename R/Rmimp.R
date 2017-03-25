@@ -519,7 +519,7 @@ computeRewiring <- function(obj, mut_ps, prob.thresh=0.5, log2.thresh=1, include
 #' @keywords mut sh3 score snp snv
 computeSh3Binding <- function(obj, mut_ss, mut_location, prob.thresh = 0.5, log2.thresh = 1) {
   # Get wt and mut sequences and pwms
-  pwm <- obj$pwm
+  pwm <- as.matrix(obj$pwm)
   pwm_name <- obj$pwm_name
   mutNames <- colnames(mut_ss)
   wtSeqs <- as.character(mut_ss[1,])
@@ -746,7 +746,7 @@ mimp <- function(muts, seqs, central=T, domain="phos", psites=NULL, pdz.range=5,
     })
   }
   
-  cat('\rdone | predicting ', .DESCRIPTIONS[[domain]], ' events\n')
+  cat('\rdone | predicting', .DESCRIPTIONS[[domain]], 'events\n')
 
   # Check if we have any data left
   scored = scored[!sapply(scored, is.null)]
