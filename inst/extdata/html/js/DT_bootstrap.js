@@ -170,7 +170,7 @@ jQuery.fn.dataTableExt.oSort['num-html-asc']  = function(a,b) {
     if ( isNaN( y ) ) { y = Infinity; };
     return ((x < y) ? -1 : ((x > y) ?  1 : 0));
 };
- 
+
 jQuery.fn.dataTableExt.oSort['num-html-desc'] = function(a,b) {
     var x = a.replace( /<.*?>/g, "" );
     var y = b.replace( /<.*?>/g, "" );
@@ -182,29 +182,50 @@ jQuery.fn.dataTableExt.oSort['num-html-desc'] = function(a,b) {
 };
 
 	// Only do it if we dont have a dataTable already
+  console.log("prediction type is: ");
+  console.log($('#predictionType').text());
+  console.log($('#predictionType').text() == "phos")
 	if($('.dataTable').length == 0){
-		$('#example').dataTable( {
-			"sDom": "<'row'<'.col-md-6'l><'.col-md-6'f>r>t<'row'<'.col-md-6'i><'.col-md-6'p>>",
-			"sPaginationType": "bootstrap",
-			"oLanguage": {"sLengthMenu": "_MENU_ records per page"},
-			"aoColumns": [ null,  //Gene
-				null, //Psite
-				null, //Mut
-				null, //Dist
-				null, //Psite-seq
-				{ "sType" : "num-html" }, //WT-score
-				{ "sType" : "num-html" }, //MT-score
-				{ "sType" : "num-html" }, //Prob
-				{ "sType" : "num-html" }, //LogRatio
-				null, //Effect
-				null //PWM/logo
-				]
-		} );
+    // If it is phosphorylation sites prediction, use this template
+    if($('#predictionType').text() == "phos") {
+      $('#example').dataTable( {
+  			"sDom": "<'row'<'.col-md-6'l><'.col-md-6'f>r>t<'row'<'.col-md-6'i><'.col-md-6'p>>",
+  			"sPaginationType": "bootstrap",
+  			"oLanguage": {"sLengthMenu": "_MENU_ records per page"},
+  			"aoColumns": [ null,  //Gene
+  				null, //Psite
+  				null, //Mut
+  				null, //Dist
+  				null, //Psite-seq
+  				{ "sType" : "num-html" }, //WT-score
+  				{ "sType" : "num-html" }, //MT-score
+  				{ "sType" : "num-html" }, //Prob
+  				{ "sType" : "num-html" }, //LogRatio
+  				null, //Effect
+  				null //PWM/logo
+  				]
+  		} );
+    } else {
+      console.log("I'm here!");
+        $('#example').dataTable( {
+          "sDom": "<'row'<'.col-md-6'l><'.col-md-6'f>r>t<'row'<'.col-md-6'i><'.col-md-6'p>>",
+          "sPaginationType": "bootstrap",
+          "oLanguage": {"sLengthMenu": "_MENU_ records per page"},
+          "aoColumns": [ null,  //Gene
+            null, //Mut
+            null, //Seq
+            { "sType" : "num-html" }, //WT-score
+            { "sType" : "num-html" }, //MT-score
+            { "sType" : "num-html" }, //Prob
+            { "sType" : "num-html" }, //LogRatio
+            null, //Effect
+            null //PWM/logo
+            ]
+        } );
+    }
 	}else{
 		$('.row').hide();
 		$('.alert-box').hide();
 	}
 
 } );
-
-

@@ -19,9 +19,7 @@ Example:
 
 \item{seqs}{Sequence data file containing protein sequences in FASTA format OR 
 named list of sequences where each list element is the uppercase sequence and the 
-name of each element is that of the protein. Example: list(GENEA="ARNDGH", GENEB="YVRRHS")
-If both sequences and phosphosites are omitted, mimp will use sites from phosphositeplus. 
-This means the IDs in your mutation file must be UniProt accession numbers}
+name of each element is that of the protein. Example: list(GENEA="ARNDGH", GENEB="YVRRHS")}
 
 \item{psites}{Phosphorylation data file (optional): a space delimited text file OR data frame containing  two columns (1) gene and (1) positions of phosphorylation sites. Example:
 \tabular{ll}{
@@ -68,11 +66,11 @@ This function takes in mutation, sequence and phosphorylation data to predict th
 impact the mutation has on phosphorylation.
 }
 \examples{
-# Get the path to example phosphorylation data 
-psite.file = system.file("extdata", "sample_phosphosites.tab", package = "rmimp")
-
 # Get the path to example mutation data 
-mut.file = system.file("extdata", "sample_muts.tab", package = "rmimp")
+mut.file = system.file("extdata", "mutation_data.txt", package = "rmimp")
+
+# Get the path to example FASTA sequence data 
+seq.file = system.file("extdata", "sequence_data.txt", package = "rmimp")
 
 # Get the path to example FASTA sequence data 
 seq.file = system.file("extdata", "sample_seqs.fa", package = "rmimp")
