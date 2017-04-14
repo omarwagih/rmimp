@@ -231,21 +231,19 @@
   
 }
 
-
-
 #' Get path to precomputed models in MIMP
 #'
 #' @param model.data name of models to retrieve. This can be hconf, hconf-fam, or lconf. It can also be a path to an RDS file containing custom models
 #' @param central Whether the mutation site is at the central residue of the sequence
 #' @param domain Which binding domain to run mimp for
 #' @export
-.getModelDataPath <- function(model.data, domain="phos"){
+.getModelDataPath <- function(model.data, domain="phos", species="human"){
   if (domain == "phos") {
-    mdata = c('hconf'     ='kinase_individual_human_experimental.mimp', 
-              'hconf-fam' ='kinase_family_human_experimental.mimp', 
-              'lconf'     ='kinase_individual_human_predicted.mimp')
-  } else if (domain == "sh3") {
-    mdata = c('hconf'     ='sh3_individual_human_experimental.mimp')
+    mdata = c('hconf'     = sprintf('kinase_individual_%s_experimental.mimp', species), 
+              'hconf-fam' = sprintf('kinase_family_human_experimental.mimp', species), 
+              'lconf'     = sprintf('kinase_individual_human_predicted.mimp', species))
+  } else if (domain %in% c("sh3", "sh2", "pdf")) {
+    mdata = c('hconf'     = sprintf('%s_individual_human_experimental.mimp', domain, species))
   }
   
   if(length(model.data) != 1 | !is.character(model.data)){ 

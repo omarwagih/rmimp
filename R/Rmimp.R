@@ -7,11 +7,9 @@ require(GenomicRanges)
 require(data.table)
 require(Biostrings)
 
-if(F){
-  setwd('~/Development/rmimp/')
-  BASE_DIR = '~/Development/rmimp/inst/extdata/'
-  setwd('~/Desktop/rmimp/')
-  BASE_DIR = '~/Desktop/rmimp/inst/extdata/'
+if(T){
+  setwd('~/Desktop/Repos/rmimp/')
+  BASE_DIR = '~/Desktop/Repos/rmimp/inst/extdata/'
   source('R/display-functions.r')
   source('R/io-functions.r')
   source('R/pwm-functions.r')
@@ -144,39 +142,41 @@ unfactor <- function(df){
 #' Train GMM model
 #' and return as a list to be used later. If file is passed,
 #' the model will also be save to a .mimp file.
-#' @param posScorePath the path to the directory contains positive scores
-#' @param negScorePath the path to the directory contains negative scores
-#' @param calculateAUC (optional) whether to calculate AUC for the model. The posSeqPath and negSeqPath are required for AUC calculation.
-#' @param posSeqPath (optional) Path to a directory containing all positive sequences of binding sites (one file per site)
-#' @param negSeqPath (optional) Path to a file containing all negative sequences in a table format. See negSeq_example.txt in inst/extdata
-#' @param pwmPath the path to the directory contains PWMs
+#' @param pos.dir the path to the directory contains positive entries
+#' @param neg.dir the path to the directory contains negative entries
+#' @param type the type of the postive and negative entries. It could be either "score" or "seq".
+#' @param calculate.auc whether to calculate AUC for the model. Type = "seq" is required for AUC calculation.
 #' @param cores (optional) the number of CPU cores that can be used to train the model
 #' @param file (optional) the path to save the model
 #' @param threshold (optional) the minimum number of scores needed for each domain to train the model
-#' @param minAUC (optional) the minimum number of AUC needed for each domain to train the model
+#' @param min.auc (optional) the minimum number of AUC needed for each domain to train the model
 #' @return a GMM model
 #' @examples
 #' No examples
 #' @export
-trainModel <- function(posScorePath, negScorePath, calculateAUC = F,
-                       posSeqPath = NULL, negSeqPath = NULL, pwmPath, cores = 2, file = NULL, threshold = 10, minAUC = 0.65){
-  # Get a list of files of scores and pwms from posScorePath, negScorePath and pwmPath
+trainModel <- function(pos.dir, neg.dir, type = "seq", calculate.auc = T, 
+                       cores = 2, file = NULL, threshold = 10, min.auc = 0.65){
+  # Get a list of files from pos.dir and neg.dir
   # and check if the corresponding files exists
-  fileNames <- intersect(list.files(path = c(posScorePath), full.names = F),
-                         intersect(list.files(path = c(negScorePath), full.names = F), list.files(path = c(pwmPath), full.names = F)))
-  allFiles <- unique(list.files(path = c(posScorePath, negScorePath, pwmPath), full.names = F))
+  fileNames <- intersect(list.files(path = c(pos.dir), full.names = F), list.files(path = c(neg.dir), full.names = F))
+  allFiles <- unique(list.files(path = c(pos.dir, neg.dir), full.names = F))
   missingFiles <- which(!is.element(allFiles, fileNames))
 
   if (length(missingFiles) != 0) {
-    warning(sprintf("A total of %d files are not found in all places(positive, negative and pwm): %s",
+    warning(sprintf("A total of %d files are not found in both positive and negative dirs: %s",
                     length(missingFiles), paste0(fileNames[missingFiles], collapse = ", ")))
   }
 
   cat("\rTraining model. \n")
   
-  if(calculateAUC) {
+  if(calculate.auc) {
+    
+    if (type != "seq") {
+      stop("Type has to be set to 'seqs' in order to calculate AUC.")
+    }
+    
     # Calculate AUCs
-    aucs <- .calculateAUC(posSeqPath, negSeqPath, cores)
+    aucs <- .calculateAUC(pos.dir, neg.dir, cores)
     names(aucs) <- unlist(strsplit(names(aucs), ".txt"))
   }
   
@@ -217,14 +217,14 @@ trainModel <- function(posScorePath, negScorePath, calculateAUC = F,
       
       # Check if any matching AUC
       # and attach the correct AUC to the model
-      if (calculateAUC) {
+      if (calculate.auc) {
         modelName <- unlist(strsplit(fileName, "--"))[1]
         if (!modelName %in% names(aucs)) {
           warning(fileName, "does not have corresponding AUC.")
           return(NULL)
         }
-        if (as.double(aucs[[modelName]]) < minAUC) {
-          warning(sprintf("AUC calculated for %s is %f - smaller than minAUC %f", fileName, as.double(aucs[[modelName]]), minAUC))
+        if (as.double(aucs[[modelName]]) < min.auc) {
+          warning(sprintf("AUC calculated for %s is %f - smaller than min.auc %f", fileName, as.double(aucs[[modelName]]), min.auc))
           return(NULL)
         }
         ret$auc <- aucs[[modelName]]
