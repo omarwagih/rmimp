@@ -7,7 +7,7 @@ require(GenomicRanges)
 require(data.table)
 require(Biostrings)
 
-if(T){
+if(F){
   setwd('~/Desktop/Repos/rmimp/')
   BASE_DIR = '~/Desktop/Repos/rmimp/inst/extdata/'
   source('R/display-functions.r')
@@ -77,66 +77,30 @@ unfactor <- function(df){
   list(fg_params=fg_params, bg_params=bg_params)
 }
 
-#' Calculate AUC based on positive and negitive seqeunces of binding sites
-#' @param posSeqPath Path to a directory containing all positive sequences of binding sites (one file per site)
-#' @param negSeqFile Path to a file containing all negative sequences in a table format. See negSeq_example.txt in inst/extdata
-#' @param cores Number of CPU cores that the function can use for calculation
-#' @return AUCs calculated
-.calculateAUC <- function(posSeqPath, negSeqFile, cores = 2) {
-  # Get positive and negative seqs of binding sites
-  posSeqsFiles <- list.files(posSeqPath, full.names = T)
-  negSeqs <- read.table(negSeqFile, header = T, sep = "\t", check.names = F)
-  
-  # Score AUCs
-  aucs <- mclapply(posSeqsFiles, function(fileName) {
-    # Get positive sequences and binding site
-    posSeqs <- unique(readLines(fileName))
-    bindingSite <- unlist(strsplit(fileName, "/", fixed = T))
-    bindingSite <- bindingSite[length(bindingSite)]
-    
-    # Find length of positive sequences
-    seqLength <- unique(nchar(posSeqs))
-    if (length(posSeqs) <= 1) {
-      warning(sprintf("length of the positive sequences for binding site %s must be more than 1!", bindingSite))
-      return(0)
-    } else if (length(seqLength) != 1) {
-      warning(sprintf("length of the positive sequences for binding site %s cannot be determined. There are %d lengths - %s",
-                   bindingSite, length(seqLength), toString(seqLength)))
-      return(0)
-    }
-    
-    # Get negitive sequences with the same length as positive sequences
-    if (!seqLength %in% as.integer(colnames(negSeqs))) {
-      warning(sprintf("no matching negative sequences of binding site %s was found with the same length as of positive sequences.",
-                      bindingSite))
-      return(0)
-    }
-    selectedNegSeqs <- unique(as.character(negSeqs[[as.character(seqLength)]]))
-    
+#' Calculate AUC from positive and negitive seqeunces of one binding site
+#' @param pos.seqs All positive sequences of one binding site 
+#' @param neg.dir All negative sequences of one binding site
+#' @param kinase.domain Whether the domain to be trained is a kinase domain.
+#' @return AUC calculated
+.calculateAUC <- function(pos.seqs, neg.seqs, kinase.domain = F) {
     # Calcuate the average AUC
-    auc <- mean(sapply(suppressWarnings(split(posSeqs, 1:ifelse(length(posSeqs) >= 10, 10, length(posSeqs)))), function(testset) {
+    auc <- mean(sapply(suppressWarnings(split(pos.seqs, 1:ifelse(length(pos.seqs) >= 10, 10, length(pos.seqs)))), 
+                       function(testset) {
       # Use the remaining sequences to generate PWM
-      remaining <- setdiff(posSeqs, testset)
+      remaining <- setdiff(pos.seqs, testset)
       pwm <- PWM(remaining, is.kinase.pwm = F)
       
-      # Score the testset and negative seqs wit the PWM
-      posScores <- mss(testset, pwm)
-      negScores <- mss(selectedNegSeqs, pwm)
+      # Score the testset and negative seqs with the PWM
+      pos.scores <- unlist(mss(testset, pwm, kinase.domain = kinase.domain))
+      neg.scores <- unlist(mss(neg.seqs, pwm, kinase.domain = kinase.domain))
       
       # Calculate and return the AUC
-      pred <- prediction(c(posScores, negScores), c(rep(1, length(posScores)), rep(0, length(negScores))))
+      pred <- prediction(c(pos.scores, neg.scores), c(rep(1, length(pos.scores)), rep(0, length(neg.scores))))
       perf <- performance(pred, "auc")
       return(unlist(perf@y.values))
     }, simplify = T, USE.NAMES = F))
-
+    
     return(auc)
-  }, mc.cores = cores)
-  
-  # Get names of binding sites and assign to aucs
-  names(aucs) <- list.files(posSeqPath)
-
-  
-  return(aucs)
 }
 
 #' Train GMM model
@@ -144,8 +108,7 @@ unfactor <- function(df){
 #' the model will also be save to a .mimp file.
 #' @param pos.dir the path to the directory contains positive entries
 #' @param neg.dir the path to the directory contains negative entries
-#' @param type the type of the postive and negative entries. It could be either "score" or "seq".
-#' @param calculate.auc whether to calculate AUC for the model. Type = "seq" is required for AUC calculation.
+#' @param kinase.domain Whether the domain to be trained is a kinase domain.
 #' @param cores (optional) the number of CPU cores that can be used to train the model
 #' @param file (optional) the path to save the model
 #' @param threshold (optional) the minimum number of scores needed for each domain to train the model
@@ -154,7 +117,7 @@ unfactor <- function(df){
 #' @examples
 #' No examples
 #' @export
-trainModel <- function(pos.dir, neg.dir, type = "seq", calculate.auc = T, 
+trainModel <- function(pos.dir, neg.dir, kinase.domain = F,
                        cores = 2, file = NULL, threshold = 10, min.auc = 0.65){
   # Get a list of files from pos.dir and neg.dir
   # and check if the corresponding files exists
@@ -169,80 +132,92 @@ trainModel <- function(pos.dir, neg.dir, type = "seq", calculate.auc = T,
 
   cat("\rTraining model. \n")
   
-  if(calculate.auc) {
-    
-    if (type != "seq") {
-      stop("Type has to be set to 'seqs' in order to calculate AUC.")
-    }
-    
-    # Calculate AUCs
-    aucs <- .calculateAUC(pos.dir, neg.dir, cores)
-    names(aucs) <- unlist(strsplit(names(aucs), ".txt"))
-  }
+  # Initiate parallel processes
+  cluster <- makeCluster(cores)
+  clusterExport(cluster, ls(all.names = T))
+  invisible(clusterEvalQ(cluster, library(ROCR)))
+  on.exit(stopCluster(cluster))
   
-  # Get parameters for each pair of scores
-  params <- mclapply(fileNames, function(fileName) {
-    pos <- read.table(paste0(posScorePath, "/", fileName), header = F)
-    neg <- read.table(paste0(negScorePath, "/", fileName), header = F)
-    pwm <- read.table(paste0(pwmPath, "/", fileName), skip = 1)
-    row.names(pwm) <- pwm[, 1]
-    pwm <- pwm[, 2:ncol(pwm)]
-
-    # Check if pwm is valid
-    # Will still proceed if some rows are missing, but a warning message will be thrown.
-    if (nrow(pwm) != length(AA)) {
-      warning(sprintf("PWM of %s might be missing some AAs.", fileName))
-    }
-
-    # Check if both score tables are numeric
-    if (!all(c(class(pos[1,]), class(neg[1,])) == "numeric")) {
-      warning(sprintf("File %s is not entirely numeric. It is likely caused by the header in the score file. Please remove it and try again.", fileName))
+  # Get positive and negative seqs of binding sites
+  pos.files <- list.files(pos.dir, full.names = T)
+  neg.files <- list.files(neg.dir, full.names = T)
+  
+  # Train model
+  model <- clusterMap(cluster, function(pos.file, neg.file) {
+    # Get positive and negative sequences and binding site
+    pos.seqs <- unique(readLines(pos.file))
+    neg.seqs <- unique(readLines(neg.file))
+    
+    # Check if the positive and negative sequences are from same binding site
+    if (pos.seqs[[1]] != neg.seqs[[1]]) {
+      warning("positive and negative sequences are not for same binding site.")
       return(NULL)
     }
+    
+    # Extract name of binding site from sequence files
+    binding.site <- pos.seqs[[1]]
+    pos.seqs <- pos.seqs[2:length(pos.seqs)]
+    neg.seqs <- neg.seqs[2:length(neg.seqs)]
+    
+    # Find length of positive sequences
+    seq.length <- unique(nchar(pos.seqs))
+    if (length(pos.seqs) <= 1) {
+      warning(sprintf("length of the positive sequences for binding site %s must be more than 1!", binding.site))
+      return(NULL)
+    } else if (length(seq.length) != 1) {
+      warning(sprintf("length of the positive sequences for binding site %s cannot be determined. There are %d lengths - %s",
+                      binding.site, length(seq.length), toString(seq.length)))
+      return(NULL)
+    }
+    
+    # Generate PWM
+    pwm <- PWM(pos.seqs, is.kinase.pwm = F)
 
+    # Score the positive and negative seqs with the PWM
+    pos.scores <- unlist(mss(pos.seqs, pwm, kinase.domain = kinase.domain))
+    neg.scores <- unlist(mss(neg.seqs, pwm, kinase.domain = kinase.domain))
+    
     # Check if both pos and neg have more scores than THRESHOLD
-    if (any(c(nrow(pos), nrow(neg)) < threshold)) {
-      warning(fileName, " skipped as at least ", threshold, " scores required for trainning.")
+    if (any(c(nrow(pos.scores), nrow(neg.scores)) < threshold)) {
+      warning(binding.site, " skipped as at least ", threshold, " scores required for trainning.")
       return(NULL)
     }
-
+    
     # Check if any prediction could be made,
     # and if not, this file will be skipped.
-    if (all(is.na(mclustBIC(data = unlist(pos, use.names = F))))) {
-      warning(fileName, " skipped as no prediction could be made.")
+    if (all(is.na(mclustBIC(data = unlist(pos.scores, use.names = F))))) {
+      warning(binding.site, " skipped as no prediction could be made.")
       return(NULL)
-    } else {
-      ret <- .fgBgParams(pos, neg)
-      ret$pwm <- pwm
-      
-      # Check if any matching AUC
-      # and attach the correct AUC to the model
-      if (calculate.auc) {
-        modelName <- unlist(strsplit(fileName, "--"))[1]
-        if (!modelName %in% names(aucs)) {
-          warning(fileName, "does not have corresponding AUC.")
-          return(NULL)
-        }
-        if (as.double(aucs[[modelName]]) < min.auc) {
-          warning(sprintf("AUC calculated for %s is %f - smaller than min.auc %f", fileName, as.double(aucs[[modelName]]), min.auc))
-          return(NULL)
-        }
-        ret$auc <- aucs[[modelName]]
-      }
-      return(ret)
     }
-  }, mc.cores = cores, mc.silent = F)
-  seqNames <- unlist(strsplit(fileNames, ".txt", fixed = T))
-  names(params) <- seqNames
-  params <- params[!sapply(params, is.null)]
+    
+    # Calculate Bayesian foreground and background parameters
+    params <- .fgBgParams(pos.scores, neg.scores)
+    params$binding.site <- binding.site
+    params$pwm <- pwm
+    
+    # Calculate AUC
+    auc <- .calculateAUC(pos.seqs, neg.seqs, kinase.domain)
+    params$auc <- auc
+    
+    # Check if AUC is bigger than AUC threshold
+    if (auc < min.auc) {
+        warning(sprintf("AUC calculated for %s is %f - smaller than min.auc %f", 
+                        binding.site, auc, min.auc))
+        return(NULL)
+    }
+    
+    return(params)
+  }, pos.files, neg.files, USE.NAMES = F, SIMPLIFY = F)
+  
+  model <- model[!sapply(model, is.null)]
   
   cat("\rdone | Training model. \n")
 
   if(!is.null(file)) {
-    saveRDS(params, file = file)
+    saveRDS(model, file = file)
   }
 
-  return(params)
+  return(model)
 }
 
 #' Get flanking sequences of a position.

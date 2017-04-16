@@ -190,6 +190,50 @@ scoreArrayRolling <- function(seqs, pwm){
   return(dat)
 }
 
+#' Compute matrix similarity score as described in MATCH algorithm for sh3 domains.
+#' 
+#' Computes matrix similarity score of a PWM with a k-mer.
+#' Score ranges from 0-1, as described in [PMID: 12824369]
+#'
+#' @param seqs Sequences to be scored
+#' @param pwm Position weight matrix
+#'  
+#' @keywords pwm mss match tfbs
+#' @export
+#' @examples
+#' # No Examples
+.mssNonCentral <- function(seqs, pwm){
+  # Best/worst sequence match
+  oa = scoreArrayFast(bestSequence(pwm), pwm, do_sum = F)[[1]]
+  wa = scoreArrayFast(worstSequence(pwm), pwm, do_sum = F)[[1]]
+  
+  # Info content
+  if(!is.null(attr(pwm, 'match.ic'))) {
+    # If info content is already in pwm matrix, get it directly from the variable
+    IC = attr(pwm, 'match.ic')
+  } else {
+    # Otherwise, calculate the ic
+    IC = apply(pwm, 2, function(col) sum(col * logb(length(AA) * col), na.rm=T))
+  }
+  
+  # Best and worst scores
+  opt.score   = sum( IC * (oa), na.rm=T )
+  worst.score = sum( IC * (wa), na.rm=T )
+  
+  # Score
+  score.arr = scoreArrayRolling(seqs, pwm)
+  score.arr = score.arr[!is.na(score.arr)]
+  
+  # Get current score
+  scores = lapply(score.arr, function(sa) {
+    sum <- colSums(sa * IC, na.rm = T)
+    return((sum - worst.score) / (opt.score - worst.score))
+  })
+  names(scores) = colnames(score.arr)
+  
+  return(scores)
+}
+
 #' Compute matrix similarity score as described in MATCH algorithm
 #' 
 #' Computes matrix similarity score of a PWM with a k-mer.
@@ -199,13 +243,19 @@ scoreArrayRolling <- function(seqs, pwm){
 #' @param pwm Position weight matrix
 #' @param na_rm Remove NA scores?
 #' @param ignore_cent If TRUE, central residue is ignore from scoring.
+#' @param kinase.domain Whether the domain to be trained is a kinase domain.
 #'  
 #' @keywords pwm mss match tfbs
 #' 
 #' @keywords internal
 #' @examples
 #' # No Examples
-mss <- function(seqs, pwm, na_rm=F, ignore_cent=T){
+mss <- function(seqs, pwm, na_rm=F, ignore_cent=T, kinase.domain = T){
+  # If not kinase domain, use non-central MSS instead
+  if (!kinase.domain) {
+    return(.mssNonCentral(seqs, pwm))
+  }
+  
   cent_ind = ceiling(ncol(pwm)/2)
   # Only score sequences which have a central residue S/T or Y depending on the PWM
   kinase_type = names(which.max(pwm[,cent_ind]))
@@ -245,50 +295,6 @@ mss <- function(seqs, pwm, na_rm=F, ignore_cent=T){
   
   # For thinks on terminals - can end up with negatives
   scores[scores < 0] = 0
-  return(scores)
-}
-
-#' Compute matrix similarity score as described in MATCH algorithm for sh3 domains.
-#' 
-#' Computes matrix similarity score of a PWM with a k-mer.
-#' Score ranges from 0-1, as described in [PMID: 12824369]
-#'
-#' @param seqs Sequences to be scored
-#' @param pwm Position weight matrix
-#'  
-#' @keywords pwm mss match tfbs
-#' @export
-#' @examples
-#' # No Examples
-mssSh3 <- function(seqs, pwm){
-  # Best/worst sequence match
-  oa = scoreArrayFast(bestSequence(pwm), pwm, do_sum = F)[[1]]
-  wa = scoreArrayFast(worstSequence(pwm), pwm, do_sum = F)[[1]]
-
-  # Info content
-  if(!is.null(attr(pwm, 'match.ic'))) {
-    # If info content is already in pwm matrix, get it directly from the variable
-    IC = attr(pwm, 'match.ic')
-  } else {
-    # Otherwise, calculate the ic
-    IC = apply(pwm, 2, function(col) sum(col * logb(length(AA) * col), na.rm=T))
-  }
-  
-  # Best and worst scores
-  opt.score   = sum( IC * (oa), na.rm=T )
-  worst.score = sum( IC * (wa), na.rm=T )
-  
-  # Score
-  score.arr = scoreArrayRolling(seqs, pwm)
-  score.arr = score.arr[!is.na(score.arr)]
-
-  # Get current score
-  scores = lapply(score.arr, function(sa) {
-    sum <- colSums(sa * IC, na.rm = T)
-    return((sum - worst.score) / (opt.score - worst.score))
-  })
-  names(scores) = seqs
-  
   return(scores)
 }
 
