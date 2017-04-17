@@ -748,12 +748,12 @@ mimp <- function(muts, seqs, central=T, domain="phos", species = "human",
 
     # If no mutations map, throw warning and return NULL
     if(nrow(mut_sites) == 0){
-      warning('No SNVs were found!')
+      warning('No pSNVs were found!')
       return(NULL)
     }
   } else if (domain %in% .TERMINAL_DOMAINS) {
     # Get wt and mut sequences
-    pwms <- sapply(mdata, function(obj) return(obj$pwm))
+    pwms <- lapply(mdata, function(obj) return(obj$pwm))
     mut_sites <- lapply(terminal.range, tSNVs, md = md, seqdata = seqdata)
     names(mut_sites) <- terminal.range
     
@@ -764,7 +764,7 @@ mimp <- function(muts, seqs, central=T, domain="phos", species = "human",
     }
   } else {
     # Get wt and mut sequences
-    pwms <- sapply(mdata, function(obj) return(obj$pwm))
+    pwms <- lapply(mdata, function(obj) return(obj$pwm))
     flank <- unique(unlist(sapply(pwms, ncol), use.names = F))
     mut_sites <- lapply(flank, SNVs, md = md, seqdata = seqdata)
     names(mut_sites) <- flank
