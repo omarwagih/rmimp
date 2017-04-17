@@ -82,13 +82,13 @@ unfactor <- function(df){
 #' @param neg.dir All negative sequences of one binding site
 #' @param kinase.domain Whether the domain to be trained is a kinase domain.
 #' @return AUC calculated
-.calculateAUC <- function(pos.seqs, neg.seqs, kinase.domain = F) {
+.calculateAUC <- function(pos.seqs, neg.seqs, kinase.domain = F, priors) {
     # Calcuate the average AUC
     auc <- mean(sapply(suppressWarnings(split(pos.seqs, 1:ifelse(length(pos.seqs) >= 10, 10, length(pos.seqs)))), 
                        function(testset) {
       # Use the remaining sequences to generate PWM
       remaining <- setdiff(pos.seqs, testset)
-      pwm <- PWM(remaining, is.kinase.pwm = F)
+      pwm <- PWM(remaining, is.kinase.pwm = F, priors = priors, do.pseudocounts = T)
       
       # Score the testset and negative seqs with the PWM
       pos.scores <- unlist(mss(testset, pwm, kinase.domain = kinase.domain))
@@ -118,7 +118,7 @@ unfactor <- function(df){
 #' No examples
 #' @export
 trainModel <- function(pos.dir, neg.dir, kinase.domain = F,
-                       cores = 2, file = NULL, threshold = 10, min.auc = 0.65){
+                       cores = 2, file = NULL, threshold = 10, min.auc = 0.65, priors = AA_PRIORS_HUMAN){
   # Get a list of files from pos.dir and neg.dir
   # and check if the corresponding files exists
   fileNames <- intersect(list.files(path = c(pos.dir), full.names = F), list.files(path = c(neg.dir), full.names = F))
@@ -134,8 +134,9 @@ trainModel <- function(pos.dir, neg.dir, kinase.domain = F,
   
   # Initiate parallel processes
   cluster <- makeCluster(cores)
-  clusterExport(cluster, ls(all.names = T))
+  clusterExport(cluster, ls(all.names = T, envir = .GlobalEnv), envir = .GlobalEnv)
   invisible(clusterEvalQ(cluster, library(ROCR)))
+  invisible(clusterEvalQ(cluster, library(mclust)))
   on.exit(stopCluster(cluster))
   
   # Get positive and negative seqs of binding sites
@@ -171,7 +172,7 @@ trainModel <- function(pos.dir, neg.dir, kinase.domain = F,
     }
     
     # Generate PWM
-    pwm <- PWM(pos.seqs, is.kinase.pwm = F)
+    pwm <- PWM(pos.seqs, is.kinase.pwm = F, priors = priors, do.pseudocounts = T)
 
     # Score the positive and negative seqs with the PWM
     pos.scores <- unlist(mss(pos.seqs, pwm, kinase.domain = kinase.domain))
@@ -196,7 +197,7 @@ trainModel <- function(pos.dir, neg.dir, kinase.domain = F,
     params$pwm <- pwm
     
     # Calculate AUC
-    auc <- .calculateAUC(pos.seqs, neg.seqs, kinase.domain)
+    auc <- .calculateAUC(pos.seqs, neg.seqs, kinase.domain, priors)
     params$auc <- auc
     
     # Check if AUC is bigger than AUC threshold
