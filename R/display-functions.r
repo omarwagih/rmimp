@@ -1,5 +1,5 @@
 # Valid domains
-.VALID_DOMAINS <- c("phos", "sh3")
+.VALID_DOMAINS <- c("phos", "sh3", "sh2", "pdz")
 
 #BASE_DIR = system.file("extdata", "", package = "rmimp")
 

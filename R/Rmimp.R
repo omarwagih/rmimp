@@ -7,9 +7,9 @@ require(GenomicRanges)
 require(data.table)
 require(Biostrings)
 
-if(F){
-  setwd('~/Desktop/Repos/rmimp/')
-  BASE_DIR = '~/Desktop/Repos/rmimp/inst/extdata/'
+if(T){
+  setwd('~/Desktop/rmimp/')
+  BASE_DIR = '~/Desktop/rmimp/inst/extdata'
   source('R/display-functions.r')
   source('R/io-functions.r')
   source('R/pwm-functions.r')
@@ -20,8 +20,15 @@ if(F){
 .MIMP_VERSION = '1.2'
 
 # Valid domains and corresonding descriptions
-.VALID_DOMAINS <- list("central" = "phos", "not_central" = "sh3")
-.DESCRIPTIONS <- list("phos" = "predicted kinase rewiring", "sh3" = "sh3 binding")
+.VALID_DOMAINS <- list("central" = "phos", 
+                       "not_central" = c("sh3", "sh2", "pdz"))
+.VALID_SPECIES <- list("phos" = c("human"), 
+                       "sh3" = c("human", "yeast"), 
+                       "sh2" = c("human"),
+                       "pdz" = c("human", "mouse", "fly"))
+.DESCRIPTIONS <- list("phos" = "predicted kinase rewiring", "sh3" = "SH3 binding", 
+                      "sh2" = "SH2 binding", "pdz" = "PDZ binding")
+.TERMINAL_DOMAINS <- c("pdz")
 
 # This message appears on library or require call of package
 .onAttach <- function(lib, pkg, ...) {
@@ -118,7 +125,7 @@ unfactor <- function(df){
 #' No examples
 #' @export
 trainModel <- function(pos.dir, neg.dir, kinase.domain = F,
-                       cores = 2, file = NULL, threshold = 10, min.auc = 0.65, priors = AA_PRIORS_HUMAN){
+                       cores = 2, file = NULL, threshold = 10, min.auc = 0.65, priors){
   # Get a list of files from pos.dir and neg.dir
   # and check if the corresponding files exists
   fileNames <- intersect(list.files(path = c(pos.dir), full.names = F), list.files(path = c(neg.dir), full.names = F))
@@ -193,7 +200,7 @@ trainModel <- function(pos.dir, neg.dir, kinase.domain = F,
     
     # Calculate Bayesian foreground and background parameters
     params <- .fgBgParams(pos.scores, neg.scores)
-    params$binding.site <- binding.site
+    params$pwm_name <- binding.site
     params$pwm <- pwm
     
     # Calculate AUC
@@ -210,6 +217,7 @@ trainModel <- function(pos.dir, neg.dir, kinase.domain = F,
     return(params)
   }, pos.files, neg.files, USE.NAMES = F, SIMPLIFY = F)
   
+  names(model) <- sapply(model, "[[", "pwm_name")
   model <- model[!sapply(model, is.null)]
   
   cat("\rdone | Training model. \n")
@@ -249,7 +257,7 @@ flankingSequence <- function(seqs, inds, flank=7, empty_char='-'){
   substr(seqs, inds, inds+(flank*2))
 }
 
-#' Find sh3 related variants (sSNVs)
+#' Find non-central variants (SNVs)
 #'
 #' Given mutation data, find variants that
 #' exist in the flanking regions of the psite
@@ -259,13 +267,13 @@ flankingSequence <- function(seqs, inds, flank=7, empty_char='-'){
 #'    and Y is the alternative amino acid.
 #' @param seqdata Phosphorylation data as a data frame of two columns (1) name of gene
 #'    or protein (2) Position of the phosphorylated residue
-#' @param flank Number of amino acids flanking the psite to be considered
+#' @param flank Number of amino acids flanking the site to be considered
 #'
-#' @keywords ssnv mutation snp
+#' @keywords snv mutation snp
 #' @export
 #' @examples
 #' # No examples
-sSNVs <- function(md, seqdata, flank) {
+SNVs <- function(md, seqdata, flank) {
 
   # Get start, end and mutation positions
   flank = flank - 1
@@ -285,6 +293,56 @@ sSNVs <- function(md, seqdata, flank) {
     return(c(wt.seq, mt.seq))
   }, mutNames, startPos, endPos, md$mut_pos, md$alt_aa)
 
+  return(seqs)
+}
+
+#' Find terminal variants (tSNVs)
+#'
+#' Given mutation data, find variants that
+#' exist in the flanking regions of the psite
+#'
+#' @param md Mutation data as data frame of two columns (1) name of gene or protein
+#'    (2) mutation in the format X123Y, where X is the reference amino acid
+#'    and Y is the alternative amino acid.
+#' @param seqdata Phosphorylation data as a data frame of two columns (1) name of gene
+#'    or protein (2) Position of the phosphorylated residue
+#' @param terminal Number of amino acids flanking the site to be considered
+#'
+#' @keywords tsnv mutation snp
+#' @export
+#' @examples
+#' # No examples
+tSNVs <- function(md, seqdata, terminal) {
+  
+  # Get sequence length
+  # and start position
+  mutNames <- md$gene
+  seqlengths <- nchar(seqdata[mutNames])
+  names(seqlengths) <- NULL
+  startPos <- seqlengths - terminal + 1
+  
+  # Keep only SNVs that sits within the terminal region
+  # and extract sequences within the terminal
+  seqs <- mapply(function(name, start, mut, mutAA) {
+    if (mut < start) {
+      return(NULL)
+    }
+    
+    wt.seq <- substr(seqdata[[name]], start, seqlengths)
+    mut <- mut - start + 1
+    start <- 1
+    mt.seq <- paste0(substr(wt.seq, start, mut - 1), mutAA, substr(wt.seq, mut + 1, seqlengths), collapse = "")
+    
+    return(c(wt.seq, mt.seq))
+  }, mutNames, startPos, md$mut_pos, md$alt_aa)
+  names(seqs) <- mutNames
+  seqs <- seqs[!sapply(seqs, is.null)]
+  mutNames <- names(seqs)
+  
+  # Format as matrix
+  seqs <- matrix(unlist(mut_ss, use.names = F))
+  colnames(seqs) <- mutNames
+  
   return(seqs)
 }
 
@@ -487,13 +545,13 @@ computeRewiring <- function(obj, mut_ps, prob.thresh=0.5, log2.thresh=1, include
 #' Score wt and mt sequences for a pwm
 #'
 #' @param obj MIMP object containing PWM, GMM parameters, and etc.
-#' @param mut_ss ssnvs data frame containing wt and mt sequences computed from sSNVs function
+#' @param mut_ss snvs data frame containing wt and mt sequences computed from SNVs function
 #' @param mut_location list of mutation locations
 #' @param prob.thresh Probability threshold of gains and losses. This value should be between 0.5 and 1.
 #' @param log2.thresh Threshold for the absolute value of log ratio between wild type and mutant scores. Anything less than this value is discarded (default: 1).
 #'
-#' @keywords mut sh3 score snp snv
-computeSh3Binding <- function(obj, mut_ss, mut_location, prob.thresh = 0.5, log2.thresh = 1) {
+#' @keywords mut score snp snv
+computeBinding <- function(obj, mut_ss, mut_location, prob.thresh = 0.5, log2.thresh = 1) {
   # Get wt and mut sequences and pwms
   pwm <- as.matrix(obj$pwm)
   pwm_name <- obj$pwm_name
@@ -513,8 +571,8 @@ computeSh3Binding <- function(obj, mut_ss, mut_location, prob.thresh = 0.5, log2
   if(length(which(!invalidCases)) == 0) return(NULL)
   
   # Score wt and mut sequences
-  wtScores <- mssSh3(wtSeqs, pwm)
-  mutScores <- mssSh3(mutSeqs, pwm)
+  wtScores <- mss(wtSeqs, pwm, kinase.domain = F)
+  mutScores <- mss(mutSeqs, pwm, kinase.domain = F)
   
   # Predict
   predicted <- mapply(function(wt, mut, name, loc) {
@@ -579,7 +637,7 @@ computeSh3Binding <- function(obj, mut_ss, mut_location, prob.thresh = 0.5, log2
 #'    CTNNB1 \tab 29\cr
 #'    CTNNB1 \tab 44\cr
 #' }
-#' @param pdz.range The number of amino acids used for predicting PDZ binding.
+#' @param terminal.range The number of amino acids used for predicting terminal domain binding.
 #' @param prob.thresh Probability threshold of gains and losses. This value should be between 0.5 and 1.
 #' @param log2.thresh Threshold for the absolute value of log ratio between wild type and mutant scores. Anything less than this value is discarded (default: 1).
 #' @param display.results If TRUE results are visualised in an html document after analysis is complete
@@ -621,15 +679,27 @@ computeSh3Binding <- function(obj, mut_ss, mut_location, prob.thresh = 0.5, log2
 #'
 #' # Show head of results
 #' head(results)
-mimp <- function(muts, seqs, central=T, domain="phos", psites=NULL, pdz.range=5, prob.thresh=0.5, log2.thresh=1, display.results=T, include.cent=F, model.data='hconf'){
+mimp <- function(muts, seqs, central=T, domain="phos", species = "human", 
+                 psites=NULL, terminal.range=5, prob.thresh=0.5, log2.thresh=1, display.results=T, include.cent=F, model.data='hconf'){
   # Constant, don't change
   flank = 7
   
   # Ensure valid domain
-  if (!is.element(domain, ifelse(central, .VALID_DOMAINS$central, .VALID_DOMAINS$not_central))) {
-    stop("Domain must be valid. Please check mimp documentation for a list of valid domains")
+  if (central) {
+    valid.domains <- .VALID_DOMAINS$central
+  } else {
+    valid.domains <- .VALID_DOMAINS$not_central
   }
 
+  if (!is.element(domain, valid.domains)) {
+    stop("Domain must be valid. Please check MIMP documentation for a list of valid domains")
+  }
+  
+  # Ensure valid species
+  if (!is.element(species, .VALID_SPECIES[[domain]])) {
+    stop("Species must be valid. Please check MIMP documentation for a list of valid domains")
+  }
+  
   # Ensure valid thresholds
   if(!is.numeric(prob.thresh) | prob.thresh > 1 | prob.thresh < 0) stop('Probability threshold "prob.thresh" must be between 0.5 and 1')
 
@@ -661,7 +731,7 @@ mimp <- function(muts, seqs, central=T, domain="phos", psites=NULL, pdz.range=5,
 
   # Get data
   cat('\r.... | loading specificity models')
-  mpath = .getModelDataPath(model.data, domain = domain)
+  mpath = .getModelDataPath(model.data, domain = domain, species = species)
   model.data = mpath$id
   mdata = readRDS(mpath$path)
   cat('\rdone\n')
@@ -681,11 +751,22 @@ mimp <- function(muts, seqs, central=T, domain="phos", psites=NULL, pdz.range=5,
       warning('No SNVs were found!')
       return(NULL)
     }
-  } else if (domain == "sh3") {
+  } else if (domain %in% .TERMINAL_DOMAINS) {
+    # Get wt and mut sequences
+    pwms <- sapply(mdata, function(obj) return(obj$pwm))
+    mut_sites <- lapply(terminal.range, tSNVs, md = md, seqdata = seqdata)
+    names(mut_sites) <- terminal.range
+    
+    # If no mutations map, throw warning and return NULL
+    if(length(mut_sites) == 0){
+      warning('No tSNVs were found!')
+      return(NULL)
+    }
+  } else {
     # Get wt and mut sequences
     pwms <- sapply(mdata, function(obj) return(obj$pwm))
     flank <- unique(unlist(sapply(pwms, ncol), use.names = F))
-    mut_sites <- lapply(flank, sSNVs, md = md, seqdata = seqdata)
+    mut_sites <- lapply(flank, SNVs, md = md, seqdata = seqdata)
     names(mut_sites) <- flank
 
     # If no mutations map, throw warning and return NULL
@@ -706,7 +787,7 @@ mimp <- function(muts, seqs, central=T, domain="phos", psites=NULL, pdz.range=5,
 
       computeRewiring(obj, mut_sites, prob.thresh, log2.thresh, include.cent)
     })
-  } else if (domain == "sh3") {
+  } else {
     # Score sequences
     scored = lapply(1:length(mdata), function(i){
       # Processing PWM i
@@ -718,7 +799,7 @@ mimp <- function(muts, seqs, central=T, domain="phos", psites=NULL, pdz.range=5,
       perc = round((i/length(mdata))*100)
       cat(sprintf('\r%3d%% | predicting %s events', perc, .DESCRIPTIONS[domain]))
 
-      computeSh3Binding(obj, mut_sites[[pwm_ncol]], md[["mut"]], prob.thresh, log2.thresh)
+      computeBinding(obj, mut_sites[[pwm_ncol]], md[["mut"]], prob.thresh, log2.thresh)
     })
   }
   

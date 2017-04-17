@@ -242,8 +242,8 @@
     mdata = c('hconf'     = sprintf('kinase_individual_%s_experimental.mimp', species), 
               'hconf-fam' = sprintf('kinase_family_human_experimental.mimp', species), 
               'lconf'     = sprintf('kinase_individual_human_predicted.mimp', species))
-  } else if (domain %in% c("sh3", "sh2", "pdf")) {
-    mdata = c('hconf'     = sprintf('%s_individual_human_experimental.mimp', domain, species))
+  } else if (domain %in% c("sh3", "sh2", "pdz")) {
+    mdata = c('hconf'     = sprintf('%s_individual_%s_experimental.mimp', domain, species))
   }
   
   if(length(model.data) != 1 | !is.character(model.data)){ 
