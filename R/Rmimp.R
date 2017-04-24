@@ -7,7 +7,7 @@ require(GenomicRanges)
 require(data.table)
 require(Biostrings)
 
-if(T){
+if(F){
   setwd('~/Desktop/rmimp/')
   BASE_DIR = '~/Desktop/rmimp/inst/extdata'
   source('R/display-functions.r')
