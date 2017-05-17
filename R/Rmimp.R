@@ -2,14 +2,15 @@ BASE_DIR = system.file("extdata", "", package = "rmimp")
 library(parallel)
 library(mclust)
 library(ROCR)
+library(pbmcapply)
 
 require(GenomicRanges)
 require(data.table)
 require(Biostrings)
 
-if(F){
-  setwd('~/Desktop/rmimp/')
-  BASE_DIR = '~/Desktop/rmimp/inst/extdata'
+if(T){
+  setwd('~/Desktop/Repos/rmimp/')
+  BASE_DIR = '~/Desktop/Repos/rmimp/inst/extdata'
   source('R/display-functions.r')
   source('R/io-functions.r')
   source('R/pwm-functions.r')
@@ -475,6 +476,87 @@ pRewiringPosterior <- function(wt.scores, mt.scores, fg.params, bg.params, auc=1
   data.frame(ploss, pgain)
 }
 
+#' Score wt sequence using PWMs in the model
+#' 
+#' @param wt_seqs A list of sequences to be scored
+#' @param central Whether the mutation site is at the central residue of the sequence
+#' @param cores Number of cores the function could use
+#' 
+#' @export
+scoreWTSequence <- function(wt_seqs, central = T, domain = "phos", species = "human", model.data = "hconf", cores = 2) {
+  # Load model
+  cat('\r.... | loading specificity models')
+  mpath <- .getModelDataPath(model.data, domain = domain, species = species)
+  model.data <- mpath$id
+  mdata <- readRDS(mpath$path)
+  cat('\rdone\n')
+  
+  # Check if WT sequeneces are stored in a list.
+  # If not, transform into a list.
+  if (class(wt_seqs) != "list") {
+    wt_seqs <- as.list(wt_seqs)
+  }
+  
+  # For each PWM, score wt_seqs
+  wt_scores <- pbmclapply(mdata, function(model) {
+    # Check if pwm is matrix.
+    # If not, transform into a matrix.
+    pwm <- model$pwm
+    if (class(pwm) != "matrix") {
+      pwm <- as.matrix(pwm)
+    }
+    
+    # Split WT sequeneces into characters
+    wt_seqs <- as.character(wt_seqs)
+    
+    # Handle scoring with corresponding function based on domain type
+    # Central domains (phos) are treated differently than other domains (e.g. sh3, sh2)
+    if (central) {
+      # Get possible start index in the sequence
+      # with flanking at least the size of PWM
+      start_ind <- ceiling(ncol(pwm)/2)
+      
+      # Extract regions with central residues
+      wt_extracts <- lapply(wt_seqs, function(seq) {
+        # Get possible end index in the sequence
+        # with flanking at least the size of PWM
+        end_ind <- nchar(seq) - start_ind + 1
+        
+        # Find all position with central residue S/T/Y,
+        # and keep only ones that are suitable for PWM scoring
+        central_loc <- unlist(gregexpr("S|T|Y", seq))
+        central_loc <- central_loc[(central_loc > start_ind) & (central_loc < end_ind)]
+        
+        # Extract regions around the central position
+        wt_extract <- mapply(substr, central_loc - start_ind + 1, central_loc + start_ind - 1, MoreArgs = list("x" = seq))
+        
+        return(wt_extract)
+      })
+      
+      # Score extracts
+      wt_scores <- lapply(wt_extracts, function(wt_extract) {
+        wt_score <- mss(wt_extract, pwm, na_rm = F)
+        names(wt_score) <- wt_extract
+        
+        # Remove NA scores
+        wt_score <- wt_score[!is.na(wt_score)]
+        
+        return(wt_score)
+      })
+    } else {
+      wt_scores <- mss(wt_seqs, pwm, kinase.domain = F)
+    }
+    
+    return(wt_scores)
+  }, mc.cores = cores)
+  
+  # Name wt_scores by sequence names
+  lapply(wt_scores, function(wt_score) {
+    names(wt_score) <- names(wt_seqs)
+    
+    return(wt_score)
+  })
+}
 
 #' Score wt and mt sequences for a pwm
 #'
