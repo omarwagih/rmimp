@@ -6,7 +6,7 @@ library(GenomicRanges)
 library(data.table)
 library(Biostrings)
 
-if(F){
+if(T){
   setwd('~/Desktop/Repos/rmimp/')
   BASE_DIR = '~/Desktop/Repos/rmimp/inst/extdata'
   source('R/display-functions.r')
@@ -485,6 +485,22 @@ pRewiringPosterior <- function(wt.scores, mt.scores, fg.params, bg.params, auc=1
 #' @import data.table
 #' @export
 scoreWTSequence <- function(wt_seqs, central = T, domain = "phos", species = "human", model.data = "hconf", cores = 2) {
+  # Ensure valid domain
+  if (central) {
+    valid.domains <- .VALID_DOMAINS$central
+  } else {
+    valid.domains <- .VALID_DOMAINS$not_central
+  }
+  
+  if (!is.element(domain, valid.domains)) {
+    stop("Domain must be valid. Please check MIMP documentation for a list of valid domains")
+  }
+  
+  # Ensure valid species
+  if (!is.element(species, .VALID_SPECIES[[domain]])) {
+    stop("Species must be valid. Please check MIMP documentation for a list of valid domains")
+  }
+  
   # Load model
   cat('\r.... | loading specificity models')
   mpath <- .getModelDataPath(model.data, domain = domain, species = species)

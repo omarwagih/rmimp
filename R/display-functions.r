@@ -9,8 +9,7 @@
 #'
 #' @param s Data frame resulting from mimp call.
 #' @param dist Distance of mutation.
-#'
-#' @keywords helper mimp
+#' @noRd
 .htmlSeq <- function(s, dist) {
   s = strsplit(s, '')[[1]]
   if (dist != 0)
@@ -26,8 +25,7 @@
 #'
 #' @param s Data frame resulting from mimp call.
 #' @param dist Distance of mutation.
-#'
-#' @keywords helper mimp
+#' @noRd
 .htmlSeqSh3 <- function(wt, mut) {
   wtSplit <- strsplit(wt, '')[[1]]
   mutSplit <- strsplit(mut, '')[[1]]
@@ -48,8 +46,6 @@
 #' @param HL_DIR Directory containing overlays
 #' @param logoExt Extension of logo files
 #' @param .webserver Request coming from webserver?
-#'
-#' @keywords display mimp
 dohtml <- function(x, LOGO_DIR, HL_DIR, logoExt = ".svg", .webserver = F) {
   x = unfactor(x)
   x$score_wt = signif(x$score_wt, 3)
@@ -151,8 +147,6 @@ dohtml <- function(x, LOGO_DIR, HL_DIR, logoExt = ".svg", .webserver = F) {
 #' @param HL_DIR Directory containing overlays
 #' @param logoExt Extension of logo files
 #' @param .webserver Request coming from webserver?
-#'
-#' @keywords display mimp
 dohtmlSh3 <- function(x, LOGO_DIR, HL_DIR, logoExt = ".svg", .webserver = F) {
   x = unfactor(x)
   x$score_wt = signif(x$score_wt, 3)

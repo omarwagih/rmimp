@@ -20,5 +20,3 @@ dohtml(x, LOGO_DIR, HL_DIR, logoExt = ".svg", .webserver = F)
 \description{
 Helper function for \code{results2html}
 }
-\keyword{display}
-\keyword{mimp}
