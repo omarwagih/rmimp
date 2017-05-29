@@ -20,5 +20,3 @@ dohtmlSh3(x, LOGO_DIR, HL_DIR, logoExt = ".svg", .webserver = F)
 \description{
 Helper function for \code{results2html} and sh3 binding
 }
-\keyword{display}
-\keyword{mimp}
