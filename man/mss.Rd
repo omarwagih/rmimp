@@ -4,7 +4,7 @@
 \alias{mss}
 \title{Compute matrix similarity score as described in MATCH algorithm}
 \usage{
-mss(seqs, pwm, na_rm = F, ignore_cent = T)
+mss(seqs, pwm, na_rm = F, ignore_cent = T, kinase.domain = T)
 }
 \arguments{
 \item{seqs}{Sequences to be scored}
@@ -14,6 +14,8 @@ mss(seqs, pwm, na_rm = F, ignore_cent = T)
 \item{na_rm}{Remove NA scores?}
 
 \item{ignore_cent}{If TRUE, central residue is ignore from scoring.}
+
+\item{kinase.domain}{Whether the domain to be trained is a kinase domain.}
 }
 \description{
 Computes matrix similarity score of a PWM with a k-mer.
@@ -27,4 +29,3 @@ Score ranges from 0-1, as described in [PMID: 12824369]
 \keyword{mss}
 \keyword{pwm}
 \keyword{tfbs}
-

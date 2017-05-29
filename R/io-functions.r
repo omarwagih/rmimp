@@ -236,7 +236,6 @@
 #' @param model.data name of models to retrieve. This can be hconf, hconf-fam, or lconf. It can also be a path to an RDS file containing custom models
 #' @param central Whether the mutation site is at the central residue of the sequence
 #' @param domain Which binding domain to run mimp for
-#' @export
 .getModelDataPath <- function(model.data, domain="phos", species="human"){
   if (domain == "phos") {
     mdata = c('hconf'     = sprintf('kinase_individual_%s_experimental.mimp', species), 

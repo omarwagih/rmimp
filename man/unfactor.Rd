@@ -18,4 +18,3 @@ unfactor( data.frame(x=c('A', 'B')) )
 \keyword{character}
 \keyword{factor}
 \keyword{internal}
-

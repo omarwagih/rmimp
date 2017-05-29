@@ -13,10 +13,10 @@ pSNVs(md, pd, seqdata, flank = 7)
 (2) mutation in the format X123Y, where X is the reference amino acid
 and Y is the alternative amino acid.}
 
-\item{psites}{Phosphorylation data as a data frame of two columns (1) name of gene 
+\item{psites}{Phosphorylation data as a data frame of two columns (1) name of gene
 or protein (2) Position of the phosphorylated residue}
 
-\item{seqs}{Sequence data as a name list. Names of the list correspond to the gene or 
+\item{seqs}{Sequence data as a name list. Names of the list correspond to the gene or
 protein name. Each entry contains the collapsed sequence.}
 }
 \description{
@@ -31,4 +31,3 @@ exist in the flanking regions of the psite
 \keyword{psites}
 \keyword{psnv}
 \keyword{snp}
-
