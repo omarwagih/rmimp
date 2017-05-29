@@ -1,5 +1,5 @@
 # Valid domains
-.VALID_DOMAINS <- c("phos", "sh3", "sh2", "pdz")
+.VALID_DOMAIN <- c("phos", "sh3", "sh2", "pdz")
 
 #BASE_DIR = system.file("extdata", "", package = "rmimp")
 
@@ -224,7 +224,7 @@ dohtmlSh3 <- function(x, LOGO_DIR, HL_DIR, logoExt = ".svg", .webserver = F) {
 #'
 results2html <- function(x, domain = "phos", max.rows = 5000) {
   # Ensure valid domain
-  if (!is.element(domain, .VALID_DOMAINS)) {
+  if (!is.element(domain, .VALID_DOMAIN)) {
     stop("domain must be valid. Please check mimp documentation for a list of valid domains.")
   }
   
