@@ -14,3 +14,4 @@ Description: MIMP is a machine learning method that predicts the impact of
     insight into disease biology and therapy development.
 License: LGPL
 RoxygenNote: 6.0.1
+Imports: mcapply
