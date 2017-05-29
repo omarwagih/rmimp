@@ -926,7 +926,6 @@ mimp <- function(muts, seqs, central=T, domain="phos", species = "human",
 #' @param kinases vector of kinases used for the scoring (e.g. c("AURKB", "CDK2")), if this isn't provided all kinases will be used .
 #'
 #' @export
-#' @importFrom data.table rbindlist
 #' 
 #' @return
 #' The data is returned in a \code{data.frame} with the following columns:
