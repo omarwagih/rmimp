@@ -2,11 +2,9 @@ BASE_DIR = system.file("extdata", "", package = "rmimp")
 library(parallel)
 library(mclust)
 library(ROCR)
-# library(pbmcapply)
-
-require(GenomicRanges)
-require(data.table)
-require(Biostrings)
+library(GenomicRanges)
+library(data.table)
+library(Biostrings)
 
 if(F){
   setwd('~/Desktop/Repos/rmimp/')
@@ -484,7 +482,7 @@ pRewiringPosterior <- function(wt.scores, mt.scores, fg.params, bg.params, auc=1
 #' @param central Whether the mutation site is at the central residue of the sequence
 #' @param cores Number of cores the function could use
 #' 
-#' @import pbmcapply
+#' @import data.table
 #' @export
 scoreWTSequence <- function(wt_seqs, central = T, domain = "phos", species = "human", model.data = "hconf", cores = 2) {
   # Load model
@@ -501,7 +499,7 @@ scoreWTSequence <- function(wt_seqs, central = T, domain = "phos", species = "hu
   }
   
   # For each PWM, score wt_seqs
-  wt_scores <- mclapply(mdata, function(model) {
+  wt_scores <- parallel::mclapply(mdata, function(model) {
     # Check if pwm is matrix.
     # If not, transform into a matrix.
     pwm <- model$pwm
@@ -928,7 +926,6 @@ mimp <- function(muts, seqs, central=T, domain="phos", species = "human",
 #' @param kinases vector of kinases used for the scoring (e.g. c("AURKB", "CDK2")), if this isn't provided all kinases will be used .
 #'
 #' @export
-#' @importFrom data.table rbindlist
 #' 
 #' @return
 #' The data is returned in a \code{data.frame} with the following columns:
