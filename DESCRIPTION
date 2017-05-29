@@ -13,4 +13,4 @@ Description: MIMP is a machine learning method that predicts the impact of
     mutations that modify protein function by altering kinase networks and provides
     insight into disease biology and therapy development.
 License: LGPL
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1

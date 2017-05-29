@@ -4,10 +4,12 @@
 \alias{results2html}
 \title{Display MIMP results interactively in browser}
 \usage{
-results2html(x, max.rows = 5000)
+results2html(x, domain = "phos", max.rows = 5000)
 }
 \arguments{
 \item{x}{Data frame resulting from mimp call.}
+
+\item{domain}{Which binding domain to run mimp for}
 
 \item{max.rows}{If data contains more rows than this value, results won't be displayed.}
 }
@@ -16,4 +18,3 @@ Display MIMP results interactively in browser
 }
 \keyword{display}
 \keyword{mimp}
-

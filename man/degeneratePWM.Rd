@@ -19,4 +19,3 @@ i.e. for each aa group, set weight to the best weight of the group at that posit
 e.g. R-2 has weight 0.7, K-2 has weight 0.1. Set both R-2 and K-2 to 0.7
 }
 \keyword{internal}
-

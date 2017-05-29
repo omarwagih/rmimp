@@ -7,7 +7,7 @@
 flankingSequence(seqs, inds, flank = 7, empty_char = "-")
 }
 \arguments{
-\item{seqs}{Character vector of sequences. If only one sequence is provided, 
+\item{seqs}{Character vector of sequences. If only one sequence is provided,
 indices from \code{inds} are assumed to all be from the same sequence.}
 
 \item{inds}{Numerical vector of positions corresponding to the sequences provided in \code{seqs}.}
@@ -17,13 +17,13 @@ indices from \code{inds} are assumed to all be from the same sequence.}
 \item{empty_char}{Character used to replace out of bound flanking sequences}
 }
 \description{
-This function obtains the flanking sequence at one or more position. 
+This function obtains the flanking sequence at one or more position.
 Out of bound indices are replaced by a blank character.
 }
 \examples{
 # One sequence and one index. Central character is 'B'
 flankingSequence(seqs='ABC', inds=2, flank=1)
-# An example showing the use of empty.char 
+# An example showing the use of empty.char
 flankingSequence(seqs='ABC', inds=2, flank=5)
 # An example with multiple sequences and indices
 flankingSequence(seqs=c('ABC', 'XYZ'), inds=c(2, 1), flank=1)
@@ -31,4 +31,3 @@ flankingSequence(seqs=c('ABC', 'XYZ'), inds=c(2, 1), flank=1)
 \keyword{flank}
 \keyword{internal}
 \keyword{sequence}
-

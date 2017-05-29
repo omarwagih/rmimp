@@ -161,7 +161,6 @@ scoreArrayFast <- function(seqs, pwm, do_sum = T, ignore_cent=F){
 #' @param pwm Position weight matrix
 #'  
 #' @keywords pwm mss match tfbs
-#' @export
 #' @examples
 #' # No Examples
 scoreArrayRolling <- function(seqs, pwm){
@@ -204,7 +203,6 @@ scoreArrayRolling <- function(seqs, pwm){
 #' @param pwm Position weight matrix
 #'  
 #' @keywords pwm mss match tfbs
-#' @export
 #' @examples
 #' # No Examples
 .mssNonCentral <- function(seqs, pwm){

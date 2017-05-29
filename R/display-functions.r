@@ -50,7 +50,6 @@
 #' @param .webserver Request coming from webserver?
 #'
 #' @keywords display mimp
-#' @export
 dohtml <- function(x, LOGO_DIR, HL_DIR, logoExt = ".svg", .webserver = F) {
   x = unfactor(x)
   x$score_wt = signif(x$score_wt, 3)
@@ -154,7 +153,6 @@ dohtml <- function(x, LOGO_DIR, HL_DIR, logoExt = ".svg", .webserver = F) {
 #' @param .webserver Request coming from webserver?
 #'
 #' @keywords display mimp
-#' @export
 dohtmlSh3 <- function(x, LOGO_DIR, HL_DIR, logoExt = ".svg", .webserver = F) {
   x = unfactor(x)
   x$score_wt = signif(x$score_wt, 3)

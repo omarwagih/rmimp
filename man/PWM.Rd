@@ -29,4 +29,3 @@ Makes a position weight matrix given aligned sequences.
 \keyword{construct}
 \keyword{internal}
 \keyword{pwm}
-

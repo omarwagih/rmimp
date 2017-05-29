@@ -114,6 +114,7 @@ unfactor <- function(df){
 #' Train GMM model
 #' and return as a list to be used later. If file is passed,
 #' the model will also be save to a .mimp file.
+#' 
 #' @param pos.dir the path to the directory contains positive entries
 #' @param neg.dir the path to the directory contains negative entries
 #' @param kinase.domain Whether the domain to be trained is a kinase domain.
@@ -121,9 +122,12 @@ unfactor <- function(df){
 #' @param file (optional) the path to save the model
 #' @param threshold (optional) the minimum number of scores needed for each domain to train the model
 #' @param min.auc (optional) the minimum number of AUC needed for each domain to train the model
+#' 
 #' @return a GMM model
+#' 
 #' @examples
 #' No examples
+#' 
 #' @export
 trainModel <- function(pos.dir, neg.dir, kinase.domain = F,
                        cores = 2, file = NULL, threshold = 10, min.auc = 0.65, priors){
@@ -271,7 +275,6 @@ flankingSequence <- function(seqs, inds, flank=7, empty_char='-'){
 #' @param flank Number of amino acids flanking the site to be considered
 #'
 #' @keywords snv mutation snp
-#' @export
 #' @examples
 #' # No examples
 SNVs <- function(md, seqdata, flank) {
@@ -310,7 +313,6 @@ SNVs <- function(md, seqdata, flank) {
 #' @param terminal Number of amino acids flanking the site to be considered
 #'
 #' @keywords tsnv mutation snp
-#' @export
 #' @examples
 #' # No examples
 tSNVs <- function(md, seqdata, terminal) {
@@ -482,6 +484,7 @@ pRewiringPosterior <- function(wt.scores, mt.scores, fg.params, bg.params, auc=1
 #' @param central Whether the mutation site is at the central residue of the sequence
 #' @param cores Number of cores the function could use
 #' 
+#' @import pbmcapply
 #' @export
 scoreWTSequence <- function(wt_seqs, central = T, domain = "phos", species = "human", model.data = "hconf", cores = 2) {
   # Load model
@@ -498,7 +501,7 @@ scoreWTSequence <- function(wt_seqs, central = T, domain = "phos", species = "hu
   }
   
   # For each PWM, score wt_seqs
-  wt_scores <- pbmclapply(mdata, function(model) {
+  wt_scores <- mclapply(mdata, function(model) {
     # Check if pwm is matrix.
     # If not, transform into a matrix.
     pwm <- model$pwm
@@ -925,6 +928,8 @@ mimp <- function(muts, seqs, central=T, domain="phos", species = "human",
 #' @param kinases vector of kinases used for the scoring (e.g. c("AURKB", "CDK2")), if this isn't provided all kinases will be used .
 #'
 #' @export
+#' @importFrom data.table rbindlist
+#' 
 #' @return
 #' The data is returned in a \code{data.frame} with the following columns:
 #' \item{gene}{Gene with the rewiring event}
@@ -937,8 +942,6 @@ mimp <- function(muts, seqs, central=T, domain="phos", species = "human",
 #' \item{post.wt.bg}{posterior probability of score in background distribution}
 #' \item{pwm}{Name of the predicted kinase}
 #' \item{pwm_fam}{Family/subfamily of the predicted kinase. If a kinase subfamily is available the family and subfamily will be seprated by an underscore e.g. "DMPK_ROCK". If no subfamily is available, only the family is shown e.g. "GSK"}
-#' 
-#' @importFrom data.table rbindlist 
 #' 
 #' If no predictions were made, function returns NULL
 #' @examples
