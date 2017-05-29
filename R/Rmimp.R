@@ -2,7 +2,7 @@ BASE_DIR = system.file("extdata", "", package = "rmimp")
 library(parallel)
 library(mclust)
 library(ROCR)
-library(pbmcapply)
+# library(pbmcapply)
 
 require(GenomicRanges)
 require(data.table)
