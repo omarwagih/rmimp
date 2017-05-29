@@ -482,6 +482,7 @@ pRewiringPosterior <- function(wt.scores, mt.scores, fg.params, bg.params, auc=1
 #' @param central Whether the mutation site is at the central residue of the sequence
 #' @param cores Number of cores the function could use
 #' 
+#' @import data.table
 #' @export
 scoreWTSequence <- function(wt_seqs, central = T, domain = "phos", species = "human", model.data = "hconf", cores = 2) {
   # Load model
