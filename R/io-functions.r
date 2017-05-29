@@ -4,6 +4,7 @@
 #' 
 #' @importFrom Biostrings readAAStringSet
 #' @keywords internal
+#' @noRd
 .readSequenceData <- function(seqs){
   
   if( is.character(seqs) ){
@@ -31,6 +32,7 @@
 #' 
 #' @importFrom data.table fread
 #' @keywords internal
+#' @noRd
 .readMutationData <- function(muts, seqdata){
   msg = 'reading mutation data'
   MUT_REGEX = '^[A-Z]\\d+[A-Z]$'
@@ -97,6 +99,7 @@
 #' 
 #' @importFrom data.table fread rbindlist
 #' @keywords internal
+#' @noRd
 .readPsiteData <- function(psites, seqdata){
   
   DIG_REGEX = '^\\d+$'
@@ -186,6 +189,7 @@
 #' @param seqdata Named list of sequences
 #' 
 #' @keywords internal
+#' @noRd
 .validatePsitesSTY <- function(pd, seqdata){
   
   # Check that psite positions matches an S, T or Y
@@ -213,6 +217,7 @@
 #' @param seqdata Named list of sequences
 #' 
 #' @keywords internal
+#' @noRd
 .validateMutationMapping <- function(muts, seqdata){
   
   mut.aa = substr( unlist(seqdata[muts$gene]), muts$mut_pos, muts$mut_pos )
@@ -236,6 +241,7 @@
 #' @param model.data name of models to retrieve. This can be hconf, hconf-fam, or lconf. It can also be a path to an RDS file containing custom models
 #' @param central Whether the mutation site is at the central residue of the sequence
 #' @param domain Which binding domain to run mimp for
+#' @noRd
 .getModelDataPath <- function(model.data, domain="phos", species="human"){
   if (domain == "phos") {
     mdata = c('hconf'     = sprintf('kinase_individual_%s_experimental.mimp', species), 
