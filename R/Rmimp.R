@@ -51,8 +51,7 @@ unfactor <- function(df){
   df
 }
 
-#' Get mixture model parameters
-#' @return means, sds, wts
+# Get mixture model parameters
 .getParams = function(clust) {
   # Get weights
   nr = 1:length(clust[['parameters']]$pro)
@@ -69,8 +68,8 @@ unfactor <- function(df){
   data.frame(nr, wts, means, sds)
 }
 
-#' Get parameters for foreground and background distros
-#' and return them as a list to be used later
+# Get parameters for foreground and background distros
+# and return them as a list to be used later
 .fgBgParams <- function(pos, neg){
   # Get gmms
   fg_gmm = suppressWarnings(Mclust(pos))
@@ -88,6 +87,7 @@ unfactor <- function(df){
 #' @param neg.dir All negative sequences of one binding site
 #' @param kinase.domain Whether the domain to be trained is a kinase domain.
 #' @return AUC calculated
+#' @noRd
 .calculateAUC <- function(pos.seqs, neg.seqs, kinase.domain = F, priors) {
     # Calcuate the average AUC
     auc <- mean(sapply(suppressWarnings(split(pos.seqs, 1:ifelse(length(pos.seqs) >= 10, 10, length(pos.seqs)))), 
@@ -416,6 +416,7 @@ pSNVs <- function(md, pd, seqdata, flank=7){
 #' @param p scores
 #' @param params parameters of GMM from getParams
 #' @keywords internal
+#' @noRd
 .probPoint = function(p, params) {
   # For all points, get likeli hood for each component
   component_vals = apply(params, 1, function(r){
@@ -487,6 +488,22 @@ pRewiringPosterior <- function(wt.scores, mt.scores, fg.params, bg.params, auc=1
 #' @import data.table
 #' @export
 scoreWTSequence <- function(wt_seqs, central = T, domain = "phos", species = "human", model.data = "hconf", cores = 2) {
+  # Ensure valid domain
+  if (central) {
+    valid.domains <- .VALID_DOMAINS$central
+  } else {
+    valid.domains <- .VALID_DOMAINS$not_central
+  }
+  
+  if (!is.element(domain, valid.domains)) {
+    stop("Domain must be valid. Please check MIMP documentation for a list of valid domains")
+  }
+  
+  # Ensure valid species
+  if (!is.element(species, .VALID_SPECIES[[domain]])) {
+    stop("Species must be valid. Please check MIMP documentation for a list of valid domains")
+  }
+  
   # Load model
   cat('\r.... | loading specificity models')
   mpath <- .getModelDataPath(model.data, domain = domain, species = species)

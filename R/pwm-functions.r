@@ -201,10 +201,7 @@ scoreArrayRolling <- function(seqs, pwm){
 #'
 #' @param seqs Sequences to be scored
 #' @param pwm Position weight matrix
-#'  
-#' @keywords pwm mss match tfbs
-#' @examples
-#' # No Examples
+#' @noRd
 .mssNonCentral <- function(seqs, pwm){
   # Best/worst sequence match
   oa = scoreArrayFast(bestSequence(pwm), pwm, do_sum = F)[[1]]
