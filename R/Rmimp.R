@@ -6,7 +6,7 @@ library(GenomicRanges)
 library(data.table)
 library(Biostrings)
 
-if(T){
+if(F){
   setwd('~/Desktop/Github/rmimp/')
   BASE_DIR = '~/Desktop/Github/rmimp/inst/extdata'
   source('R/display-functions.r')
