@@ -6,9 +6,9 @@ library(GenomicRanges)
 library(data.table)
 library(Biostrings)
 
-if(F){
-  setwd('~/Desktop/Repos/rmimp/')
-  BASE_DIR = '~/Desktop/Repos/rmimp/inst/extdata'
+if(T){
+  setwd('~/Desktop/Github/rmimp/')
+  BASE_DIR = '~/Desktop/Github/rmimp/inst/extdata'
   source('R/display-functions.r')
   source('R/io-functions.r')
   source('R/pwm-functions.r')
@@ -324,25 +324,27 @@ tSNVs <- function(md, seqdata, terminal) {
   
   # Keep only SNVs that sits within the terminal region
   # and extract sequences within the terminal
-  seqs <- mapply(function(name, start, mut, mutAA) {
-    if (mut < start) {
+  seqs <- mapply(function(name, length, start, mut, mutAA) {
+    if (mut <= start) {
       return(NULL)
     }
     
-    wt.seq <- substr(seqdata[[name]], start, seqlengths)
+    wt.seq <- substr(seqdata[[name]], start, length)
     mut <- mut - start + 1
     start <- 1
     mt.seq <- paste0(substr(wt.seq, start, mut - 1), mutAA, substr(wt.seq, mut + 1, seqlengths), collapse = "")
     
     return(c(wt.seq, mt.seq))
-  }, mutNames, startPos, md$mut_pos, md$alt_aa)
+  }, mutNames, seqlengths, startPos, md$mut_pos, md$alt_aa)
   names(seqs) <- mutNames
+  mutLoc = md$mut[!sapply(seqs, is.null)]
   seqs <- seqs[!sapply(seqs, is.null)]
   mutNames <- names(seqs)
   
   # Format as matrix
-  seqs <- matrix(unlist(mut_ss, use.names = F))
+  seqs <- matrix(unlist(seqs, use.names = F), nrow = 2)
   colnames(seqs) <- mutNames
+  attr(seqs, "mutLoc") = mutLoc
   
   return(seqs)
 }
@@ -881,8 +883,10 @@ mimp <- function(muts, seqs, central=T, domain="phos", species = "human",
       # Print msg
       perc = round((i/length(mdata))*100)
       cat(sprintf('\r%3d%% | predicting %s events', perc, .DESCRIPTIONS[domain]))
-
-      computeBinding(obj, mut_sites[[pwm_ncol]], md[["mut"]], prob.thresh, log2.thresh)
+    
+      # If terminal domains, mut locations are defined in the mut_sites
+      mut_location = attr(mut_sites[[pwm_ncol]], "mutLoc")
+      computeBinding(obj, mut_sites[[pwm_ncol]], mut_location, prob.thresh, log2.thresh)
     })
   }
   
