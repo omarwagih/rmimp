@@ -4,7 +4,7 @@
 \alias{dohtml}
 \title{Helper function for \code{results2html}}
 \usage{
-dohtml(x, LOGO_DIR, HL_DIR, .webserver = F)
+dohtml(x, LOGO_DIR, HL_DIR, logoExt = ".svg", .webserver = F)
 }
 \arguments{
 \item{x}{Data frame resulting from mimp call.}
@@ -13,12 +13,10 @@ dohtml(x, LOGO_DIR, HL_DIR, .webserver = F)
 
 \item{HL_DIR}{Directory containing overlays}
 
+\item{logoExt}{Extension of logo files}
+
 \item{.webserver}{Request coming from webserver?}
 }
 \description{
 Helper function for \code{results2html}
 }
-\keyword{display}
-\keyword{internal}
-\keyword{mimp}
-

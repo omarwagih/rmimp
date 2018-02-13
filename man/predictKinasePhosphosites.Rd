@@ -32,6 +32,8 @@ The data is returned in a \code{data.frame} with the following columns:
 \item{post.wt.bg}{posterior probability of score in background distribution}
 \item{pwm}{Name of the predicted kinase}
 \item{pwm_fam}{Family/subfamily of the predicted kinase. If a kinase subfamily is available the family and subfamily will be seprated by an underscore e.g. "DMPK_ROCK". If no subfamily is available, only the family is shown e.g. "GSK"}
+
+If no predictions were made, function returns NULL
 }
 \description{
 Compute posterior probability of wild type phosphosites for kinases
@@ -49,4 +51,3 @@ results_all = predictKinasePhosphosites(psite.file, seq.file)
 # Run for select kinases
 results_select = predictKinasePhosphosites(psite.file, seq.file, kinases=c("AURKB", "CDK2"))
 }
-

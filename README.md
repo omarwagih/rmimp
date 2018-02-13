@@ -19,7 +19,7 @@ library("devtools")
 Then download and install the `rmimp` package from github (**this may take a few minutes, please be patient**):
 
 ```r
-install_github("omarwagih/rmimp")
+install_github("kvnkuang/rmimp")
 ```
 
 Load the `rmimp` package into R, and you're ready to go!

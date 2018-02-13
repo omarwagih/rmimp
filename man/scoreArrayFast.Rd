@@ -27,4 +27,3 @@ as an array.
 \keyword{mss}
 \keyword{pwm}
 \keyword{tfbs}
-

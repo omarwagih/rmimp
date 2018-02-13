@@ -24,4 +24,3 @@ pRewiringPosterior(wt.scores, mt.scores, fg.params, bg.params, auc = 1,
 Computing posterior probability - ploss and pgain
 }
 \keyword{internal}
-

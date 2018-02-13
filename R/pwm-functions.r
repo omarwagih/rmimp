@@ -1,10 +1,15 @@
-
 # Constants
 AA = c('A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V')
 AA_PRIORS_HUMAN  =   c(A=0.070, R=0.056, N=0.036, D=0.048,C=0.023,Q=0.047,E=0.071,G=0.066,H=0.026,I=0.044,
                        L=0.100,K=0.058,M=0.021,F=0.037,P=0.063,S=0.083,T=0.053,W=0.012,Y=0.027,V=0.060)
 AA_PRIORS_YEAST  =   c(A=0.055, R=0.045, N=0.061, D=0.058, C=0.013, Q=0.039, E=0.064, G=0.05, H=0.022, I=0.066,
                        L=0.096, K=0.073, M=0.021, F=0.045, P=0.044, S=0.091, T=0.059, W=0.01, Y=0.034, V=0.056)
+AA_PRIORS_FLY    =   c(A=0.075, R=0.054, N=0.048, D=0.052, C=0.019, Q=0.054, E=0.065, G=0.063, H=0.027, I=0.048,
+                       L=0.087, K=0.055, M=0.023, F=0.033, P=0.057, S=0.086, T=0.058, W=0.009, Y=0.028, V=0.059)
+AA_PRIORS_MOUSE  =   c(A=0.068, R=0.056, N=0.036, D=0.048, C=0.023, Q=0.048, E=0.070, G=0.063, H=0.026, I=0.044,
+                       L=0.100, K=0.057, M=0.023, F=0.037, P=0.061, S=0.085, T=0.054, W=0.012, Y=0.027, V=0.061)
+AA_PRIORS_WORM   =   c(A=0.066, R=0.053, N=0.048, D=0.055, C=0.020, Q=0.043, E=0.067, G=0.055, H=0.023, I=0.059,
+                       L=0.084, K=0.063, M=0.026, F=0.044, P=0.051, S=0.082, T=0.059, W=0.011, Y=0.030, V=0.062)
 
 #' Construct position weight matrix
 #' 
@@ -93,7 +98,6 @@ degeneratePWM <- function(pwm, dgroups=c('DE','KR','ILMV','QN','ST')){
   .pwm
 }
 
-
 #' Get weight/probability for each amino acid in a sequence 
 #' 
 #' Gets weight/probability for the amino acid at each position of the sequence
@@ -148,6 +152,87 @@ scoreArrayFast <- function(seqs, pwm, do_sum = T, ignore_cent=F){
   return(by_seq)
 }
 
+#' Get weight/probability for each amino acid in a sequence 
+#' 
+#' Gets weight/probability for the amino acid at each position of the sequence
+#' as an array.
+#'
+#' @param seqs One or more sequences to be processed
+#' @param pwm Position weight matrix
+#'  
+#' @keywords pwm mss match tfbs
+#' @examples
+#' # No Examples
+scoreArrayRolling <- function(seqs, pwm){
+  # Split sequence
+  sp = strsplit(seqs, '')
+  
+  # Number of positions
+  seq.lens = sapply(sp, length)
+  pwm_ncol = ncol(pwm)
+  repeats = seq.lens - pwm_ncol + 1
+
+  # Iterate through sequences
+  dat = lapply(1:length(sp), function(index){
+    seq <- sp[[index]]
+    if(length(seq) < pwm_ncol) {
+      return(NA)
+    }
+    # print(sprintf("original sequence: %s and total %d repeats", paste0(seq, collapse = ""), repeats[index]))
+    # Generate sequences of ncol(pwm) length
+    ret <- sapply(1:repeats[index], function(i) {
+      currentSeq <- seq[i : (i + pwm_ncol - 1)]
+      # print(sprintf("current sequence: %s", paste0(currentSeq, collapse = "")))
+      # Match sequence to the PWM
+      mat = matrix(c(match(currentSeq, rownames(pwm)), 1:pwm_ncol), pwm_ncol, 2)
+      ret = list(pwm[mat])
+      names(ret) = paste0(currentSeq, collapse = "")
+      return(ret)
+    })
+    return(do.call("cbind", ret))
+  })
+  return(dat)
+}
+
+#' Compute matrix similarity score as described in MATCH algorithm for sh3 domains.
+#' 
+#' Computes matrix similarity score of a PWM with a k-mer.
+#' Score ranges from 0-1, as described in [PMID: 12824369]
+#'
+#' @param seqs Sequences to be scored
+#' @param pwm Position weight matrix
+#' @noRd
+.mssNonCentral <- function(seqs, pwm){
+  # Best/worst sequence match
+  oa = scoreArrayFast(bestSequence(pwm), pwm, do_sum = F)[[1]]
+  wa = scoreArrayFast(worstSequence(pwm), pwm, do_sum = F)[[1]]
+  
+  # Info content
+  if(!is.null(attr(pwm, 'match.ic'))) {
+    # If info content is already in pwm matrix, get it directly from the variable
+    IC = attr(pwm, 'match.ic')
+  } else {
+    # Otherwise, calculate the ic
+    IC = apply(pwm, 2, function(col) sum(col * logb(length(AA) * col), na.rm=T))
+  }
+  
+  # Best and worst scores
+  opt.score   = sum( IC * (oa), na.rm=T )
+  worst.score = sum( IC * (wa), na.rm=T )
+  
+  # Score
+  score.arr = scoreArrayRolling(seqs, pwm)
+  score.arr = score.arr[!is.na(score.arr)]
+  
+  # Get current score
+  scores = lapply(score.arr, function(sa) {
+    sum <- colSums(sa * IC, na.rm = T)
+    return((sum - worst.score) / (opt.score - worst.score))
+  })
+  names(scores) = colnames(score.arr)
+  
+  return(scores)
+}
 
 #' Compute matrix similarity score as described in MATCH algorithm
 #' 
@@ -158,13 +243,19 @@ scoreArrayFast <- function(seqs, pwm, do_sum = T, ignore_cent=F){
 #' @param pwm Position weight matrix
 #' @param na_rm Remove NA scores?
 #' @param ignore_cent If TRUE, central residue is ignore from scoring.
+#' @param kinase.domain Whether the domain to be trained is a kinase domain.
 #'  
 #' @keywords pwm mss match tfbs
 #' 
 #' @keywords internal
 #' @examples
 #' # No Examples
-mss <- function(seqs, pwm, na_rm=F, ignore_cent=T){
+mss <- function(seqs, pwm, na_rm=F, ignore_cent=T, kinase.domain = T){
+  # If not kinase domain, use non-central MSS instead
+  if (!kinase.domain) {
+    return(.mssNonCentral(seqs, pwm))
+  }
+  
   cent_ind = ceiling(ncol(pwm)/2)
   # Only score sequences which have a central residue S/T or Y depending on the PWM
   kinase_type = names(which.max(pwm[,cent_ind]))
@@ -206,8 +297,6 @@ mss <- function(seqs, pwm, na_rm=F, ignore_cent=T){
   scores[scores < 0] = 0
   return(scores)
 }
-
-
 
 #' Given a position weight matrix, find the best matching sequence
 #' 

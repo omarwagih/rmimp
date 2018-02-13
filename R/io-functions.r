@@ -4,6 +4,7 @@
 #' 
 #' @importFrom Biostrings readAAStringSet
 #' @keywords internal
+#' @noRd
 .readSequenceData <- function(seqs){
   
   if( is.character(seqs) ){
@@ -31,6 +32,7 @@
 #' 
 #' @importFrom data.table fread
 #' @keywords internal
+#' @noRd
 .readMutationData <- function(muts, seqdata){
   msg = 'reading mutation data'
   MUT_REGEX = '^[A-Z]\\d+[A-Z]$'
@@ -58,7 +60,7 @@
   
   # Set column names and remove all factors - if any
   names(md)[1:2] = c('gene', 'mut')
-  md = unfactor(md)
+  md = rapply(md, as.character, classes="factor", how="replace")
   
   # 2. Validate mutation data
   # Ensure valid regex for mutations
@@ -97,6 +99,7 @@
 #' 
 #' @importFrom data.table fread rbindlist
 #' @keywords internal
+#' @noRd
 .readPsiteData <- function(psites, seqdata){
   
   DIG_REGEX = '^\\d+$'
@@ -186,6 +189,7 @@
 #' @param seqdata Named list of sequences
 #' 
 #' @keywords internal
+#' @noRd
 .validatePsitesSTY <- function(pd, seqdata){
   
   # Check that psite positions matches an S, T or Y
@@ -213,6 +217,7 @@
 #' @param seqdata Named list of sequences
 #' 
 #' @keywords internal
+#' @noRd
 .validateMutationMapping <- function(muts, seqdata){
   
   mut.aa = substr( unlist(seqdata[muts$gene]), muts$mut_pos, muts$mut_pos )
@@ -231,16 +236,20 @@
   
 }
 
-
-
 #' Get path to precomputed models in MIMP
 #'
 #' @param model.data name of models to retrieve. This can be hconf, hconf-fam, or lconf. It can also be a path to an RDS file containing custom models
-#' @keywords internal
-.getModelDataPath <- function(model.data){
-  mdata = c('hconf'     ='kinase_individual_human_experimental.mimp', 
-            'hconf-fam' ='kinase_family_human_experimental.mimp', 
-            'lconf'     ='kinase_individual_human_predicted.mimp')
+#' @param central Whether the mutation site is at the central residue of the sequence
+#' @param domain Which binding domain to run mimp for
+#' @noRd
+.getModelDataPath <- function(model.data, domain="phos", species="human"){
+  if (domain == "phos") {
+    mdata = c('hconf'     = sprintf('kinase_individual_%s_experimental.mimp', species), 
+              'hconf-fam' = sprintf('kinase_family_human_experimental.mimp', species), 
+              'lconf'     = sprintf('kinase_individual_human_predicted.mimp', species))
+  } else if (domain %in% c("sh3", "sh2", "pdz")) {
+    mdata = c('hconf'     = sprintf('%s_individual_%s_experimental.mimp', domain, species))
+  }
   
   if(length(model.data) != 1 | !is.character(model.data)){ 
     cat('\n'); stop('model.data must be a character of length one')
@@ -248,7 +257,8 @@
   
   custom.models = file.exists(model.data)
   if(!model.data %in% names(mdata) & !custom.models){
-    cat('\n'); stop('model.data must be one of the following: "hconf", "hconf-fam", or "lconf"')
+    # Automatically retrieve the possible valid options of model.data
+    cat('\n'); stop(sprintf("model.data must be one of the following: %s, or a path to custom model.", paste0(names(mdata), collapse = ", ")))
   }
   
   model.data.path = model.data

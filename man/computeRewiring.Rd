@@ -28,4 +28,3 @@ Score wt and mt sequences for a pwm
 \keyword{score}
 \keyword{snp}
 \keyword{snv}
-

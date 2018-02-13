@@ -19,4 +19,3 @@ Used in matrix similarity score calculation.
 \keyword{internal}
 \keyword{pwm}
 \keyword{worst}
-
