@@ -1,5 +1,4 @@
 require(mclust)
-require(parallel)
 require(ROCR)
 
 #' Get parameters for foreground and background distros
