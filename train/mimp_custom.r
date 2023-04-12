@@ -68,7 +68,7 @@ cv <- function(pos, neg, k=10, avg=T, avg.fun=mean){
 }
 
 
-setwd('~/Desktop/mimp_custom/')
+setwd('~/Development/rmimp/train/')
 
 # From https://raw.githubusercontent.com/omarwagih/rmimp/master/R/pwm-functions.r
 source('pwm-functions.r')
